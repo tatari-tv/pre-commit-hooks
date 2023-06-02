@@ -1,0 +1,46 @@
+[tool.poetry]
+name = "python-hooks"
+version = "0.0.0"
+description = "Custom Python pre-commit hooks for use by Tatari"
+authors = ["Tatari SRE <sre@tatari.tv>"]
+repository = "https://github.com/tatari-tv/pre-commit-hooks"
+readme = "README.md"
+packages = [{include = "python_hooks"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+toml = "^0.10.2"
+
+[tool.poetry.group.dev.dependencies]
+black = "23.1.0"
+flake8 = "6.0.0"
+mypy = "^1.1.1"
+pre-commit = "^3.1.1"
+pytest = "^7.2.2"
+pytest-cov = "^4.0.0"
+pytest-sugar = "^0.9.6"
+pytest-xdist = "^3.2.1"
+types-toml = "^0.10.8.6"
+
+[tool.poetry-dynamic-versioning]
+enable = true
+style = 'pep440'
+
+[build-system]
+requires = ["poetry-core>=1.5.2", "poetry-dynamic-versioning"]
+build-backend = "poetry_dynamic_versioning.backend"
+
+[tool.black]
+line-length = 140
+skip-string-normalization = true
+target_version = ['py39']
+
+[tool.mypy]
+files = 'python_hooks'
+python_version = '3.9'
+check_untyped_defs = false
+warn_incomplete_stub = true
+follow_imports = 'silent'
+ignore_missing_imports = true
+mypy_path = 'stubs'
+implicit_optional = true

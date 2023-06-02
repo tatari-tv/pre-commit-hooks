@@ -1,0 +1,51 @@
+---
+name: ci
+
+on:  # yamllint disable-line rule:truthy
+  push:
+    branches:
+      - '**'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-20.04
+    timeout-minutes: 10
+    steps:
+      - uses: tatari-tv/github-actions/checkout@v3
+      - uses: tatari-tv/github-actions/poetry-install@v3
+        with:
+          cache-site-packages: true
+          pypi-username: ${{secrets.CI_USER_PYPI_USERNAME}}
+          pypi-password: ${{secrets.CI_USER_PYPI_PASSWORD}}
+      - run: make unit-test
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-20.04
+    timeout-minutes: 10
+    steps:
+      - uses: tatari-tv/github-actions/checkout@v3
+      - uses: tatari-tv/github-actions/poetry-install@v3
+        with:
+          cache-site-packages: true
+          pypi-username: ${{secrets.CI_USER_PYPI_USERNAME}}
+          pypi-password: ${{secrets.CI_USER_PYPI_PASSWORD}}
+      - run: make lint
+
+  type-check:
+    name: Type Checks
+    runs-on: ubuntu-20.04
+    timeout-minutes: 10
+    steps:
+      - uses: tatari-tv/github-actions/checkout@v3
+      - uses: tatari-tv/github-actions/poetry-install@v3
+        with:
+          cache-site-packages: true
+          pypi-username: ${{secrets.CI_USER_PYPI_USERNAME}}
+          pypi-password: ${{secrets.CI_USER_PYPI_PASSWORD}}
+      - run: make type-check

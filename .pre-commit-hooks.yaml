@@ -1,0 +1,7 @@
+- id: poetry-pkg-dep-constraint-format
+  name: poetry-pkg-dep-constraint-format
+  description: Evaluate if Poetry dependency constraints for packages follow Tatari's standards
+  entry: poetry run python -m python_hooks.poetry_pkg_dep_constraints
+  language: python
+  pass_filenames: false
+  files: ^(.*/)?pyproject.toml$
