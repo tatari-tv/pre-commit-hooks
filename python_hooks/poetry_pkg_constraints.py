@@ -33,6 +33,7 @@ def validate_constraints(pyproject_path: str = 'pyproject.toml') -> int:
             print(f'INCORRECT FORMAT: {dep_name} = "{constraint}"')
             exit_status = 1
 
+    print('All package constraints should use ^ (or less ideally >=) when defining versions\nFor example: python = "^3.10"')
     return exit_status
 
 

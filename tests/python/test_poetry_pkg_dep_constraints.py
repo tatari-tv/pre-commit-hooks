@@ -2,7 +2,7 @@ from os.path import dirname
 
 from pytest import raises
 
-from python_hooks.poetry_pkg_dep_constraints import validate_constraints
+from python_hooks.poetry_pkg_constraints import validate_constraints
 
 
 def test_good_pyproject():
