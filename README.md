@@ -1,5 +1,8 @@
 # Tatari Pre-Commit Hooks
 
+**Disclaimer!** This is a public repo.  Take care about what information and data you put here, since
+it will be viewable on the internet.
+
 Place to store all of Tatari's custom [pre-commit hooks](https://pre-commit.com/#creating-new-hooks).
 
 ## Adding a new hook

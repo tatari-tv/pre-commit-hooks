@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := dev
 
 .PHONY: all
-all: dev unit-test type-check lint sdist release
+all: dev unit-test type-check lint
 
 # dev targets
 .PHONY: dev
