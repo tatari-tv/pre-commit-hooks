@@ -20,8 +20,6 @@ jobs:
       - uses: tatari-tv/github-actions/poetry-install@v3
         with:
           cache-site-packages: true
-          pypi-username: ${{secrets.CI_USER_PYPI_USERNAME}}
-          pypi-password: ${{secrets.CI_USER_PYPI_PASSWORD}}
       - run: make unit-test
 
   lint:
@@ -33,8 +31,6 @@ jobs:
       - uses: tatari-tv/github-actions/poetry-install@v3
         with:
           cache-site-packages: true
-          pypi-username: ${{secrets.CI_USER_PYPI_USERNAME}}
-          pypi-password: ${{secrets.CI_USER_PYPI_PASSWORD}}
       - run: make lint
 
   type-check:
@@ -46,6 +42,4 @@ jobs:
       - uses: tatari-tv/github-actions/poetry-install@v3
         with:
           cache-site-packages: true
-          pypi-username: ${{secrets.CI_USER_PYPI_USERNAME}}
-          pypi-password: ${{secrets.CI_USER_PYPI_PASSWORD}}
       - run: make type-check
