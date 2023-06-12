@@ -10,16 +10,32 @@ permissions:
   contents: read
   id-token: write
 
+env:
+  POETRY_VERSION: "1.4.2"
+  PYTHON_VERSION: "3.9"
+
 jobs:
   test:
     name: Unit Tests
     runs-on: ubuntu-20.04
     timeout-minutes: 10
     steps:
-      - uses: tatari-tv/github-actions/checkout@v3
-      - uses: tatari-tv/github-actions/poetry-install@v3
+      - uses: actions/checkout@v3
+      - name: Setup Python ${{env.PYTHON_VERSION}}
+        uses: actions/setup-python@v4
         with:
-          cache-site-packages: true
+          python-version: ${{env.PYTHON_VERSION}}
+      - name: Install Poetry
+        shell: bash
+        run: |
+          pip3 install poetry==${{env.POETRY_VERSION}}
+          poetry config virtualenvs.create false
+      - name: Install Poetry Dependencies
+        env:
+          PYTHONUSERBASE: ""
+          SETUPTOOLS_USE_DISTUTILS: "stdlib"
+        shell: bash
+        run: poetry install
       - run: make unit-test
 
   lint:
@@ -27,10 +43,22 @@ jobs:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
     steps:
-      - uses: tatari-tv/github-actions/checkout@v3
-      - uses: tatari-tv/github-actions/poetry-install@v3
+      - uses: actions/checkout@v3
+      - name: Setup Python ${{env.PYTHON_VERSION}}
+        uses: actions/setup-python@v4
         with:
-          cache-site-packages: true
+          python-version: ${{env.PYTHON_VERSION}}
+      - name: Install Poetry
+        shell: bash
+        run: |
+          pip3 install poetry==${{env.POETRY_VERSION}}
+          poetry config virtualenvs.create false
+      - name: Install Poetry Dependencies
+        env:
+          PYTHONUSERBASE: ""
+          SETUPTOOLS_USE_DISTUTILS: "stdlib"
+        shell: bash
+        run: poetry install
       - run: make lint
 
   type-check:
@@ -38,8 +66,20 @@ jobs:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
     steps:
-      - uses: tatari-tv/github-actions/checkout@v3
-      - uses: tatari-tv/github-actions/poetry-install@v3
+      - uses: actions/checkout@v3
+      - name: Setup Python ${{env.PYTHON_VERSION}}
+        uses: actions/setup-python@v4
         with:
-          cache-site-packages: true
+          python-version: ${{env.PYTHON_VERSION}}
+      - name: Install Poetry
+        shell: bash
+        run: |
+          pip3 install poetry==${{env.POETRY_VERSION}}
+          poetry config virtualenvs.create false
+      - name: Install Poetry Dependencies
+        env:
+          PYTHONUSERBASE: ""
+          SETUPTOOLS_USE_DISTUTILS: "stdlib"
+        shell: bash
+        run: poetry install
       - run: make type-check
