@@ -1,3 +1,10 @@
+- id: poetry-app-constraints
+  name: poetry-app-constraints
+  description: Evaluate if Poetry dependency constraints for application follow Tatari's standards
+  entry: poetry run python -m python_hooks.poetry_app_constraints
+  language: python
+  pass_filenames: false
+  files: ^(.*/)?pyproject.toml$
 - id: poetry-pkg-constraints
   name: poetry-pkg-constraints
   description: Evaluate if Poetry dependency constraints for packages follow Tatari's standards
