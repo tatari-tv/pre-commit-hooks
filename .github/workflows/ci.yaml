@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 env:
-  POETRY_VERSION: "1.4.2"
+  POETRY_VERSION: "1.5.1"
   PYTHON_VERSION: "3.9"
 
 jobs:
