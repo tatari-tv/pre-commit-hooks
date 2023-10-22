@@ -59,6 +59,11 @@ jobs:
           SETUPTOOLS_USE_DISTUTILS: "stdlib"
         shell: bash
         run: poetry install
+      - name: cache pre-commit
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pre-commit/
+          key: pre-commit-${{runner.os}}-${{env.PYTHON_VERSION}}-${{hashFiles('.pre-commit-config.yaml')}}
       - run: make lint
 
   type-check:
