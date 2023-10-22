@@ -46,7 +46,7 @@ filename="gitleaks_${version}_${os}_${arch}.tar.gz"
 url="https://github.com/gitleaks/gitleaks/releases/download/v${version}/${filename}"
 
 binary_dir="${HOME}/.cache/pre-commit/gitleaks/${os}-${arch}-${version}"
-binary=${binary_dir}/gitleaks
+binary="${binary_dir}/gitleaks"
 
 if [[ ! -x "${binary}" ]]; then
   # downloading gitleaks binary
