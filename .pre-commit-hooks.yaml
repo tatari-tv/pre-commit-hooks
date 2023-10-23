@@ -12,3 +12,9 @@
   language: python
   pass_filenames: false
   files: ^(.*/)?pyproject.toml$
+- id: gitleaks
+  name: gitleaks
+  description: Download and run gitleaks binary
+  entry: bash_hooks/gitleaks.sh
+  language: script
+  pass_filenames: false
