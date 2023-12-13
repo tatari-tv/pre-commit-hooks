@@ -15,3 +15,8 @@ def test_bad_from_imports():
 # sample file imports tuple, which we will say is forbidden
 def test_bad_imports():
     assert check_imports(f'{dirname(__file__)}/data/forbidden_imports_sample.py', ['tuple']) == 1
+
+
+# sample file imports pandas aliased pd, which we will say is forbidden
+def test_bad_imports_aliased():
+    assert check_imports(f'{dirname(__file__)}/data/forbidden_imports_sample.py', ['pandas']) == 1
