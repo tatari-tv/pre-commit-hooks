@@ -21,6 +21,6 @@
 - id: forbidden-imports
   name: forbidden-imports
   description: Check for forbidden imports specified in args bn
-  entry: python python_hooks/forbidden_imports.py
+  entry: python -m python_hooks.forbidden_imports
   language: python
   types: [python]
