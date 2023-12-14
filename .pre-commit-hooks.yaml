@@ -18,3 +18,9 @@
   entry: bash_hooks/gitleaks.sh
   language: script
   pass_filenames: false
+- id: forbidden-imports
+  name: forbidden-imports
+  description: Check for forbidden imports specified in args bn
+  entry: python -m python_hooks.forbidden_imports
+  language: python
+  types: [python]
