@@ -24,3 +24,9 @@
   entry: python -m python_hooks.forbidden_imports
   language: python
   types: [python]
+- id: dockerfile-poetry
+  name: dockerfile-poetry
+  description: Check if Dockerfile specifies a poetry version on install
+  entry: python -m python_hooks.dockerfile_poetry
+  language: python
+  files: .*Dockerfile.*

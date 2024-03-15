@@ -1,0 +1,12 @@
+FROM someaccount.dkr.ecr.us-west-2.amazonaws.com/some-image:latest
+
+# Installs python 10 and virtualenv for Spark and Notebooks
+RUN apt-get update \
+  && apt-get install -y \
+  build-essential \
+  python3.10-dev
+
+ARG POETRY_VERSION_CONSTRAINT="poetry~=1.5.1"
+
+RUN /databricks/python3/bin/pip install --upgrade pip
+RUN /databricks/python3/bin/pip install ${POETRY_VERSION_CONSTRAINT}
