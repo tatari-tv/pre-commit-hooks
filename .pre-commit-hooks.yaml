@@ -30,3 +30,7 @@
   entry: python -m python_hooks.dockerfile_poetry
   language: python
   files: .*Dockerfile.*
+- id: deptry
+  name: deptry
+  entry: bash_hooks/deptry.sh
+  language: script
