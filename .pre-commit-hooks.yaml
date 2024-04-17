@@ -24,10 +24,10 @@
   entry: python -m python_hooks.forbidden_imports
   language: python
   types: [python]
-- id: forbidden-functions
-  name: forbidden-functions
-  description: Check for forbidden functions specified in args bn
-  entry: python -m python_hooks.forbidden_function_calls
+- id: disallowed-functions
+  name: disallowed-functions
+  description: Check for disallowed functions specified in args bn
+  entry: python -m python_hooks.disallowed_function_calls
   language: python
   types: [python]
 - id: dockerfile-poetry
