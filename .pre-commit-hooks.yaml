@@ -24,6 +24,12 @@
   entry: python -m python_hooks.forbidden_imports
   language: python
   types: [python]
+- id: forbidden-functions
+  name: forbidden-functions
+  description: Check for forbidden functions specified in args bn
+  entry: python -m python_hooks.forbidden_function_calls
+  language: python
+  types: [python]
 - id: dockerfile-poetry
   name: dockerfile-poetry
   description: Check if Dockerfile specifies a poetry version on install
