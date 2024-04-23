@@ -38,6 +38,29 @@ def test_check_function_call_caught(mock_ignore_check, mock_print):
 
 
 @patch('builtins.print')
+@patch('python_hooks.disallowed_function_calls.ignore_check')
+def test_check_function_call_attribute_caught(mock_ignore_check, mock_print):
+    mock_ignore_check.return_value = [
+        FunctionCall('disallowed', 'allowed', 15, 9),
+    ]
+    actual_return = check_function_call(FILE, ['disallowed'], ['allowed'])
+
+    assert actual_return == 1
+    assert mock_ignore_check.call_count == 1
+    assert mock_ignore_check.call_args == call(
+        FILE,
+        [FunctionCall('disallowed', 'allowed', 15, 9),
+        FunctionCall('disallowed', 'allowed', 16, 5)],
+    )
+
+    mock_print.assert_has_calls(
+        [
+            call(MESSAGE.format(name='disallowed', filename=FILE, line=15, col_offset=9, replacement='allowed')),
+        ]
+    )
+
+
+@patch('builtins.print')
 def test_check_function_call_pass(mock_print):
     assert check_function_call(FILE, ['my_function'], ['my_other_function']) == 0
     mock_print.assert_not_called()
