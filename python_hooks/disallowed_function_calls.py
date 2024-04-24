@@ -14,19 +14,12 @@ def check_function_call(filename, disallowed_functions: list[str], suggest_repla
         tree = ast.parse(file.read(), filename=filename)
 
     for node in ast.walk(tree):
-        # check for functions first
         if isinstance(node, ast.Call):
             if isinstance(node.func, ast.Attribute):
                 if node.func.attr in disallowed_functions:
                     index = disallowed_functions.index(node.func.attr)
                     # accumulate flagged functions
                     check_accumulator.append(FunctionCall(node.func.attr, suggest_replace[index], node.lineno, node.col_offset))
-
-        # then check for attributes
-        if isinstance(node, ast.Attribute):
-            if node.attr in disallowed_functions:
-                index = disallowed_functions.index(node.attr)
-                check_accumulator.append(FunctionCall(node.attr, suggest_replace[index], node.lineno, node.col_offset))
 
     # check if there's a tatari-noqa annotation in accumulator.
     # If so, ignore the check and remove from accumulator.

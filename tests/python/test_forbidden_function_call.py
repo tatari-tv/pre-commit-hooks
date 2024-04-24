@@ -11,51 +11,28 @@ from python_hooks.disallowed_function_calls import MESSAGE
 from python_hooks.disallowed_function_calls import validate_args
 from python_hooks.utills.ignore_check import FunctionCall
 
-FILE = f'{dirname(__file__)}/data/disallowed_function_calls_sample.py'
+FILE = f'{dirname(__file__)}/data/disallowed_sample.py'
 
 
 @patch('builtins.print')
 @patch('python_hooks.disallowed_function_calls.ignore_check')
 def test_check_function_call_caught(mock_ignore_check, mock_print):
     mock_ignore_check.return_value = [
-        FunctionCall('split', 'splitlines', 2, 0),
         FunctionCall('split', 'splitlines', 3, 0),
+        FunctionCall('split', 'splitlines', 4, 0),
     ]
     actual_return = check_function_call(FILE, ['split'], ['splitlines'])
     assert actual_return == 1
     assert mock_ignore_check.call_count == 1
     assert mock_ignore_check.call_args == call(
         FILE,
-        [FunctionCall('split', 'splitlines', 2, 0), FunctionCall('split', 'splitlines', 3, 0), FunctionCall('split', 'splitlines', 6, 0)],
+        [FunctionCall('split', 'splitlines', 3, 0), FunctionCall('split', 'splitlines', 4, 0), FunctionCall('split', 'splitlines', 7, 0)],
     )
 
     mock_print.assert_has_calls(
         [
-            call(MESSAGE.format(name='split', filename=FILE, line=2, col_offset=0, replacement='splitlines')),
             call(MESSAGE.format(name='split', filename=FILE, line=3, col_offset=0, replacement='splitlines')),
-        ]
-    )
-
-
-@patch('builtins.print')
-@patch('python_hooks.disallowed_function_calls.ignore_check')
-def test_check_function_call_attribute_caught(mock_ignore_check, mock_print):
-    mock_ignore_check.return_value = [
-        FunctionCall('disallowed', 'allowed', 15, 9),
-    ]
-    actual_return = check_function_call(FILE, ['disallowed'], ['allowed'])
-
-    assert actual_return == 1
-    assert mock_ignore_check.call_count == 1
-    assert mock_ignore_check.call_args == call(
-        FILE,
-        [FunctionCall('disallowed', 'allowed', 15, 9),
-        FunctionCall('disallowed', 'allowed', 16, 5)],
-    )
-
-    mock_print.assert_has_calls(
-        [
-            call(MESSAGE.format(name='disallowed', filename=FILE, line=15, col_offset=9, replacement='allowed')),
+            call(MESSAGE.format(name='split', filename=FILE, line=4, col_offset=0, replacement='splitlines')),
         ]
     )
 
