@@ -4,14 +4,14 @@ NOQA = "tatari-noqa"
 
 
 @dataclass
-class FunctionCall:
+class IdentifierCheck:
     name: str
     replacement: str
     line: int
     col_offset: int
 
 
-def ignore_check(filename: str, check_fails: list[FunctionCall], noqa_string: str = NOQA) -> list[FunctionCall]:
+def ignore_check(filename: str, check_fails: list[IdentifierCheck], noqa_string: str = NOQA) -> list[IdentifierCheck]:
     """
     Takes a filename, and a list of failed checks, and a noqa_string to check for in comments.
     Checks each failed line for a noqa_string comment, and removes the check if it is found.
