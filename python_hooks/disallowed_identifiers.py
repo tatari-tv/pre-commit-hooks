@@ -6,7 +6,7 @@ import sys
 from python_hooks.utills.ignore_check import IdentifierCheck
 from python_hooks.utills.ignore_check import ignore_check
 
-DISALLOWED_MESSAGE = "Flagged {identifier} call of {name} in {filename} @ line {line} column {col_offset} with {replacement}"
+DISALLOWED_MESSAGE = "Flagged {identifier} {name} in {filename}:{line} column {col_offset}. Replace with {replacement}"
 
 
 class Identifier(enum.Enum):
