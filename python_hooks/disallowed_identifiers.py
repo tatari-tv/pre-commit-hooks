@@ -78,7 +78,6 @@ if __name__ == "__main__":
     parser.add_argument('--replacements', nargs='+', help='Replacement names for disallowed identifiers', required=True)
     parser.add_argument('file_list', nargs='+', help='List of files to check')  # provided by the pre-commit call
     args = parser.parse_args()
-    print(args.identifier)
 
     validate_args(args)
     return_code = main(args)
