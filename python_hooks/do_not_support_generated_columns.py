@@ -4,14 +4,13 @@ import re
 import sys
 
 FILE_REGEX = r'\d{8}'
-SQL_REGEX = r"GENERATED ALWAYS AS \(\w+\) STORED"
+SQL_REGEX = r"generated\s+always\s+as\s+\(\s*\w+.*\)\s*stored"
 CUTOFF_DATE = "20240426"
 
 
 def check_file(filename):
-    print(filename)
     with open(filename) as file:
-        file_data = file.read()
+        file_data = file.read().lower()
 
     if re.search(SQL_REGEX, file_data):
         print(f"Postgres WAL replication to datalake does not support generated column. Please use a different approach: file {filename}")
