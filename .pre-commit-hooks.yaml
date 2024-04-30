@@ -40,3 +40,8 @@
   name: deptry
   entry: bash_hooks/deptry.sh
   language: script
+- id: do-not-support-generated-columns
+  name: do-not-support-generated-columns
+  entry: python -m python_hooks.do_not_support_generated_columns
+  language: python
+  types: [sql]
