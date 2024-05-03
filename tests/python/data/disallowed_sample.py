@@ -8,10 +8,10 @@ stringy.split('!!')[0].split('a')  # tatari-noqa
 # autopep8: off
 # fmt: off
 stringo = (
-    stringy
+    stringy  # tatari-noqa
     .split('!!')[0]
     .split('a')
-)   # tatari-noqa
+)
 
 
 class FooDisallowedAttr:
