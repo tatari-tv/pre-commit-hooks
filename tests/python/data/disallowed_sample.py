@@ -4,6 +4,8 @@ stringy.split('!!')
 stringy.replace('!!', '!!')
 stringy.splitlines()
 stringy.split('!!')  # tatari-noqa
+stringy.split('!!')[0].split('a')  # tatari-noqa
+(stringy.split('!!')[0].split('a'))  # tatari-noqa
 
 
 class FooDisallowedAttr:
