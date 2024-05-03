@@ -32,9 +32,9 @@ def test_check_identifiers_function(mock_ignore_check, mock_print):
             IdentifierCheck('split', 'splitlines', 3, 0),
             IdentifierCheck('split', 'splitlines', 6, 0),
             IdentifierCheck('split', 'splitlines', 7, 0),
-            IdentifierCheck('split', 'splitlines', 9, 4),
+            IdentifierCheck('split', 'splitlines', 11, 4),
             IdentifierCheck('split', 'splitlines', 7, 0),
-            IdentifierCheck('split', 'splitlines', 9, 4),
+            IdentifierCheck('split', 'splitlines', 11, 4),
         ],
     )
 
@@ -66,7 +66,7 @@ def test_check_identifiers_attribute(mock_ignore_check, mock_print):
     assert mock_ignore_check.call_count == 1
     assert mock_ignore_check.call_args == call(
         FILE,
-        [IdentifierCheck('disallowed', 'allowed', 18, 9), IdentifierCheck('disallowed', 'allowed', 19, 5)],
+        [IdentifierCheck('disallowed', 'allowed', 23, 9), IdentifierCheck('disallowed', 'allowed', 24, 5)],
     )
 
     mock_print.assert_has_calls(
