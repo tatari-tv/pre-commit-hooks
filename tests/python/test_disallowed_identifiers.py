@@ -42,7 +42,7 @@ def test_check_identifiers_function(mock_ignore_check):
 def test_check_identifiers_function_and_ignore(mock_print):
     actual_return = check_identifiers(FILE, Identifier.function, ['split'], ['splitlines'])
     assert actual_return == 1
-    mock_print.call_args_list == [
+    assert mock_print.call_args_list == [
         call(
             DISALLOWED_MESSAGE.format(
                 identifier=Identifier.function, name='split', filename=FILE, line=2, col_offset=0, replacement='splitlines'
@@ -73,12 +73,12 @@ def test_check_identifiers_attribute(mock_ignore_check):
 
 @patch('python_hooks.disallowed_identifiers.print')
 def test_check_identifiers_attribute_and_ignore(mock_print):
-    actual_return = check_identifiers(FILE, Identifier.attribute, ['split'], ['splitlines'])
+    actual_return = check_identifiers(FILE, Identifier.attribute, ['disallowed'], ['allowed'])
     assert actual_return == 1
-    mock_print.call_args_list == [
+    assert mock_print.call_args_list == [
         call(
             DISALLOWED_MESSAGE.format(
-                identifier=Identifier.attribute, name='disallowed', filename=FILE, line=19, col_offset=9, replacement='allowed'
+                identifier=Identifier.attribute, name='disallowed', filename=FILE, line=23, col_offset=9, replacement='allowed'
             )
         ),
     ]
