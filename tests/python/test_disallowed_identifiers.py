@@ -15,9 +15,8 @@ from python_hooks.utills.ignore_check import IdentifierCheck
 FILE = f'{dirname(__file__)}/data/disallowed_sample.py'
 
 
-@patch('builtins.print')
 @patch('python_hooks.disallowed_identifiers.ignore_check')
-def test_check_identifiers_function(mock_ignore_check, mock_print):
+def test_check_identifiers_function(mock_ignore_check):
     mock_ignore_check.return_value = [
         IdentifierCheck('split', 'splitlines', 2, 0),
         IdentifierCheck('split', 'splitlines', 3, 0),
@@ -31,30 +30,36 @@ def test_check_identifiers_function(mock_ignore_check, mock_print):
             IdentifierCheck('split', 'splitlines', 2, 0),
             IdentifierCheck('split', 'splitlines', 3, 0),
             IdentifierCheck('split', 'splitlines', 6, 0),
+            IdentifierCheck('split', 'splitlines', 7, 0),
+            IdentifierCheck('split', 'splitlines', 11, 4),
+            IdentifierCheck('split', 'splitlines', 7, 0),
+            IdentifierCheck('split', 'splitlines', 11, 4),
         ],
     )
 
-    mock_print.assert_has_calls(
-        [
-            call(
-                DISALLOWED_MESSAGE.format(
-                    identifier=Identifier.function, name='split', filename=FILE, line=2, col_offset=0, replacement='splitlines'
-                )
-            ),
-            call(
-                DISALLOWED_MESSAGE.format(
-                    identifier=Identifier.function, name='split', filename=FILE, line=3, col_offset=0, replacement='splitlines'
-                )
-            ),
-        ]
-    )
+
+@patch('python_hooks.disallowed_identifiers.print')
+def test_check_identifiers_function_and_ignore(mock_print):
+    actual_return = check_identifiers(FILE, Identifier.function, ['split'], ['splitlines'])
+    assert actual_return == 1
+    assert mock_print.call_args_list == [
+        call(
+            DISALLOWED_MESSAGE.format(
+                identifier=Identifier.function, name='split', filename=FILE, line=2, col_offset=0, replacement='splitlines'
+            )
+        ),
+        call(
+            DISALLOWED_MESSAGE.format(
+                identifier=Identifier.function, name='split', filename=FILE, line=3, col_offset=0, replacement='splitlines'
+            )
+        ),
+    ]
 
 
-@patch('builtins.print')
 @patch('python_hooks.disallowed_identifiers.ignore_check')
-def test_check_identifiers_attribute(mock_ignore_check, mock_print):
+def test_check_identifiers_attribute(mock_ignore_check):
     mock_ignore_check.return_value = [
-        IdentifierCheck('disallowed', 'allowed', 15, 9),
+        IdentifierCheck('disallowed', 'allowed', 19, 9),
     ]
     actual_return = check_identifiers(FILE, Identifier.attribute, ['disallowed'], ['allowed'])
 
@@ -62,18 +67,21 @@ def test_check_identifiers_attribute(mock_ignore_check, mock_print):
     assert mock_ignore_check.call_count == 1
     assert mock_ignore_check.call_args == call(
         FILE,
-        [IdentifierCheck('disallowed', 'allowed', 15, 9), IdentifierCheck('disallowed', 'allowed', 16, 5)],
+        [IdentifierCheck('disallowed', 'allowed', 23, 9), IdentifierCheck('disallowed', 'allowed', 24, 5)],
     )
 
-    mock_print.assert_has_calls(
-        [
-            call(
-                DISALLOWED_MESSAGE.format(
-                    identifier=Identifier.attribute, name='disallowed', filename=FILE, line=15, col_offset=9, replacement='allowed'
-                )
-            ),
-        ]
-    )
+
+@patch('python_hooks.disallowed_identifiers.print')
+def test_check_identifiers_attribute_and_ignore(mock_print):
+    actual_return = check_identifiers(FILE, Identifier.attribute, ['disallowed'], ['allowed'])
+    assert actual_return == 1
+    assert mock_print.call_args_list == [
+        call(
+            DISALLOWED_MESSAGE.format(
+                identifier=Identifier.attribute, name='disallowed', filename=FILE, line=23, col_offset=9, replacement='allowed'
+            )
+        ),
+    ]
 
 
 @patch('builtins.print')
