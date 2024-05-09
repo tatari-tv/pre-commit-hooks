@@ -3,6 +3,7 @@ from python_hooks.validate_branch_name import validate_branch_name
 
 def test_validate_branch_name():
     branch_names_with_exit_code = [
+        ("simplebranch", 0),
         ("UPPER-12345/lower", 0),
         ("lower-12345/UPPER", 0),
         ("ABC-123/with-dash", 0),
