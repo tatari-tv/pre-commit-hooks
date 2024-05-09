@@ -46,3 +46,9 @@
   entry: python -m python_hooks.do_not_support_generated_columns
   language: python
   types: [sql]
+- id: validate-branch-name
+  name: validate-branch-name
+  description: Checks that branch name is in the expected format
+  entry: python -m python_hooks.validate_branch_name
+  language: python
+  types: [python]
