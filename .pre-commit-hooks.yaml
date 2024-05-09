@@ -52,3 +52,4 @@
   entry: python -m python_hooks.validate_branch_name
   language: python
   types: [python]
+  pass_filenames: false
