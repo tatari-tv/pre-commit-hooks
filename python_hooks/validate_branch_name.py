@@ -18,6 +18,7 @@ def validate_branch_name(branch) -> int:
 
 
 if __name__ == "__main__":
-    branch = check_output(['git', 'symbolic-ref', '--short', 'HEAD']).strip().decode('utf-8')
+    commit = check_output(['git', 'rev-parse', 'HEAD']).strip().decode('utf-8')
+    branch = check_output(["git", "branch", "--contains", commit]).strip().decode('utf-8').split('\n')[-1].strip(' *')
     return_code = validate_branch_name(branch)
     sys.exit(return_code)
