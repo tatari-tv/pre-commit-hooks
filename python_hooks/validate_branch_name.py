@@ -1,3 +1,4 @@
+import os
 import re
 import sys
 from subprocess import check_output
@@ -18,7 +19,12 @@ def validate_branch_name(branch) -> int:
 
 
 if __name__ == "__main__":
-    commit = check_output(['git', 'rev-parse', 'HEAD']).strip().decode('utf-8')
-    branch = check_output(["git", "branch", "--contains", commit]).strip().decode('utf-8').split('\n')[-1].strip(' *')
+    # use GITHUB_REF_NAME, set from github actions, if available.
+    # Github actions does a shallow clone of the repo with only the first commit by default, so no branch names are available.
+    branch = os.environ.get('GITHUB_REF_NAME')
+    if branch is None:
+        commit = check_output(['git', 'rev-parse', 'HEAD']).strip().decode('utf-8')
+        branch = check_output(["git", "branch", "--contains", commit]).strip().decode('utf-8').split('\n')[-1].strip(' *')
+
     return_code = validate_branch_name(branch)
     sys.exit(return_code)
