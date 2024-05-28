@@ -39,7 +39,7 @@ def validate_python_constraint(dep_name: str, constraint: str) -> int:
     # Regex match on supported formats
     if not match(r'~', constraint):
         print(f'INCORRECT FORMAT: {dep_name} = "{constraint}"')
-        print('Applications shoule use ~ when defining python version\nFor example: python = "~3.10"')
+        print('Applications shoule use ~ when defining python version. For example: python = "~3.10"')
         return 1
 
     return 0
@@ -49,7 +49,7 @@ def validate_package_constraint(dep_name: str, constraint: str) -> int:
     # Regex match on supported formats
     if not match(r'\^', constraint):
         print(f'INCORRECT FORMAT: {dep_name} = "{constraint}"')
-        print('All application package constraints should use ^ when defining version\nFor example:  tatari-metrics = "^1.0.1"')
+        print('All application package constraints should use ^ when defining version. For example:  tatari-metrics = "^1.0.1"')
         return 1
 
     return 0
