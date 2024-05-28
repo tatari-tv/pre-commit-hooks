@@ -9,6 +9,7 @@
 - id: poetry-pkg-constraints
   name: poetry-pkg-constraints
   description: Evaluate if Poetry dependency constraints for packages follow Tatari's standards
+  additional_dependencies: [toml]
   entry: poetry run python -m python_hooks.poetry_pkg_constraints
   language: python
   pass_filenames: false
