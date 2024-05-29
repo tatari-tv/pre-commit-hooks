@@ -47,7 +47,7 @@ def validate_python_constraint(dep_name: str, constraint: str) -> int:
 
 def validate_package_constraint(dep_name: str, constraint: str) -> int:
     # Regex match on supported formats
-    if not match(r'>=', constraint) or not (match(r'>=', constraint) and match(r'<=', constraint)):
+    if not match(r'>=', constraint) or (match(r'>=', constraint) and match(r'.*<=', constraint)):
         print(f'INCORRECT FORMAT: {dep_name} = "{constraint}"')
         print('Package constraints should use >= when defining versions. For example: tatari-pyspark = ">=1.0.14"')
         return 1

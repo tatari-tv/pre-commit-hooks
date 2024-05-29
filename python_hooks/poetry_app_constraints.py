@@ -39,7 +39,7 @@ def validate_python_constraint(dep_name: str, constraint: str) -> int:
     # Regex match on supported formats
     if not match(r'~', constraint):
         print(f'INCORRECT FORMAT: {dep_name} = "{constraint}"')
-        print('Applications shoule use ~ when defining python version. For example: python = "~3.10"')
+        print('Applications should use ~ when defining python version. For example: python = "~3.10"')
         return 1
 
     return 0
