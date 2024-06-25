@@ -55,3 +55,9 @@
   language: python
   types: [python]
   pass_filenames: false
+- id: imagetag-branch-constraint
+  name: imagetag-branch-constraint
+  description: Check for image_tag and branch
+  entry: python -m python_hooks.imagetag_branch_constraint
+  language: python
+  types: [python]

@@ -11,6 +11,7 @@ repos:
         args: [--remove]
       - id: check-added-large-files
         files: '^.*\.py$'
+      - id: imagetag-branch-constraint
   - repo: https://github.com/adrienverge/yamllint.git
     rev: v1.29.0
     hooks:
