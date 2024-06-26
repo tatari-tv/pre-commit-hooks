@@ -6,12 +6,12 @@ from unittest.mock import patch
 import pytest
 
 from python_hooks.utills.ignore_check import IdentifierCheck
-from python_hooks.imagetag_branch_constraint import check_file, DISALLOWED_MESSAGE
+from python_hooks.image_tag_branch_constraint import check_file, DISALLOWED_MESSAGE
 
-FILE = f'{dirname(__file__)}/data/imagetag_branch_sample.py'
+FILE = f'{dirname(__file__)}/data/image_tag_branch_sample.py'
 
 
-@patch('python_hooks.imagetag_branch_constraint.ignore_check')
+@patch('python_hooks.image_tag_branch_constraint.ignore_check')
 def test_check_file_with_constraints_and_ignore(mock_ignore_check):
     mock_ignore_check.return_value = [
     ]
@@ -30,7 +30,7 @@ def test_check_file_with_constraints_and_ignore(mock_ignore_check):
     )
 
 
-@patch('python_hooks.imagetag_branch_constraint.print')
+@patch('python_hooks.image_tag_branch_constraint.print')
 def test_check_file_with_constraints(mock_print):
     actual_return = check_file(FILE)
     assert actual_return == 1
