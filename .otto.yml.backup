@@ -1,6 +1,6 @@
 otto:
   api: 1
-  
+  jobs: 4
   tasks:
   - dev
 
