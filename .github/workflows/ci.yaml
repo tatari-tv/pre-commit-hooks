@@ -20,9 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v3
+      - uses: tatari-tv/github-actions/checkout@v5
       - name: Setup Python ${{env.PYTHON_VERSION}}
-        uses: actions/setup-python@v4
+        uses: tatari-tv/github-actions/setup-python@v5
         with:
           python-version: ${{env.PYTHON_VERSION}}
       - name: Install Poetry
@@ -43,9 +43,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v3
+      - uses: tatari-tv/github-actions/checkout@v5
       - name: Setup Python ${{env.PYTHON_VERSION}}
-        uses: actions/setup-python@v4
+        uses: tatari-tv/github-actions/setup-python@v5
         with:
           python-version: ${{env.PYTHON_VERSION}}
       - name: Install Poetry
@@ -71,9 +71,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v3
+      - uses: tatari-tv/github-actions/checkout@v5
       - name: Setup Python ${{env.PYTHON_VERSION}}
-        uses: actions/setup-python@v4
+        uses: tatari-tv/github-actions/setup-python@v5
         with:
           python-version: ${{env.PYTHON_VERSION}}
       - name: Install Poetry
