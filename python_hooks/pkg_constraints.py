@@ -5,7 +5,9 @@ Validate dependency constraint formats for Python package repos
 - Packages: dependency specifiers should use >= only (no upper bound with <=)
 '''
 from argparse import ArgumentParser
+from collections.abc import Generator
 from re import search
+from typing import Optional
 
 from toml import load
 
@@ -19,7 +21,7 @@ def _is_uv_project(pyproject: dict) -> bool:
     return 'dependencies' in project
 
 
-def _get_uv_dependencies(pyproject: dict) -> list[tuple[str, str]]:
+def _get_uv_dependencies(pyproject: dict) -> Generator[tuple[str, str], None, None]:
     """Yield (dep_name, constraint) from project.dependencies (PEP 621)."""
     deps = pyproject.get('project', {}).get('dependencies') or []
     for dep_str in deps:
@@ -39,7 +41,7 @@ def _get_uv_dependencies(pyproject: dict) -> list[tuple[str, str]]:
         yield dep_name, constraint
 
 
-def _get_uv_requires_python(pyproject: dict) -> str | None:
+def _get_uv_requires_python(pyproject: dict) -> Optional[str]:
     """Return requires-python string if set."""
     return (pyproject.get('project') or {}).get('requires-python')
 

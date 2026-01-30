@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 
 import toml
 
@@ -16,7 +17,7 @@ def write_uv_pyproject_toml(
     temp_dir: str,
     dependencies: list[str],
     *,
-    requires_python: str | None = None,
+    requires_python: Optional[str] = None,
 ) -> str:
     """Write a uv/PEP 621 style pyproject.toml (project.dependencies)."""
     toml_file_path = os.path.join(temp_dir, "pyproject.toml")
