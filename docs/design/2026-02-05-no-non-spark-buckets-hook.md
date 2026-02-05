@@ -1,8 +1,8 @@
 # Design Document: No Non-Spark Buckets in Spark Projects Hook
 
-**Author:** GitHub Copilot (via leslie)  
-**Date:** 2026-02-05  
-**Status:** Draft  
+**Author:** GitHub Copilot (via leslie)
+**Date:** 2026-02-05
+**Status:** Draft
 **Review Passes Completed:** 1/1
 
 ## Summary
@@ -40,7 +40,7 @@ During the migration analysis (February 2026), we discovered files across multip
 
 **Confirmed Spark projects with violations:**
 - `ml-impression-level-performance` (1 file) - Uses `tatari-pyspark ^5.0.0`
-  
+
 **Needs verification (may not be Spark projects):**
 - `ml-affinity` (2 files) - Uses PySpark but no tatari-pyspark dependency
 - `python-tatari-grey-shared` (1 file) - Shared utilities
@@ -126,7 +126,7 @@ Flags these patterns:
 NON_SPARK_IMPORT_PATTERNS = [
     # Direct imports
     r"from\s+tatari_data_utils\.buckets\s+import\s+",
-    
+
     # Convenience function import
     r"from\s+tatari_data_utils\s+import\s+.*get_default_buckets_for_env",
 ]
@@ -169,7 +169,7 @@ pre-commit run no-non-spark-buckets-in-spark-projects --all-files
 ERROR: Non-Spark bucket imports detected in Spark projects
 
   data_sources/loaders/clickhouse/loader.py:12
-    Non-Spark bucket import detected in PySpark/ML project. 
+    Non-Spark bucket import detected in PySpark/ML project.
     Use 'tatari_data_utils.buckets_spark' instead.
     Import: from tatari_data_utils import get_default_buckets_for_env
 
@@ -238,7 +238,7 @@ Allow legitimate uses via:
    - `ml-impression-level-performance` - Uses tatari-pyspark
    - `ml-affinity` - Uses PySpark (needs verification if it's a Spark project)
 
-   Note: `python-tatari-grey-shared` and `python-tatari-reach-frequency-prediction` 
+   Note: `python-tatari-grey-shared` and `python-tatari-reach-frequency-prediction`
    may be non-Spark projects and should be verified before changes.
 
 2. For each PR:
@@ -395,7 +395,7 @@ class JobConfig:
 ```
 
 ```python
-# ✅ Good - Use tatari-pyspark wrapper  
+# ✅ Good - Use tatari-pyspark wrapper
 from tatari_pyspark.utils.buckets import DefaultBuckets
 
 class JobConfig:
