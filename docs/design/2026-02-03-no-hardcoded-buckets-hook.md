@@ -54,7 +54,7 @@ Even after the cleanup, new hardcoded patterns continue to appear because there'
 
 ### Non-Goals
 
-- Detecting bucket names in configuration files (YAML, JSON) - these may be intentional
+- Detecting bucket names in configuration files (YAML, JSON, Terraform `.tf`/`.tfvars`) - these may be intentional
 - Detecting bucket names in test fixtures - these are often intentional mocks
 - Auto-fixing violations - too complex and risky
 - Enforcing specific import patterns - just prevent the anti-patterns
@@ -178,6 +178,9 @@ python -m python_hooks.no_hardcoded_buckets --suggest [files...]
 # Warn only (exit 0 even with violations)
 python -m python_hooks.no_hardcoded_buckets --warn-only [files...]
 
+# Also check for hardcoded region strings
+python -m python_hooks.no_hardcoded_buckets --check-regions [files...]
+
 # Via pre-commit
 pre-commit run no-hardcoded-buckets --all-files
 ```
@@ -188,7 +191,7 @@ pre-commit run no-hardcoded-buckets --all-files
 |------|-------------|
 | `--warn-only` | Print violations as warnings but exit 0 (don't fail the hook) |
 | `--suggest` | Include suggested fixes in output |
-| `--no-regions` | Disable detection of hardcoded region strings |
+| `--check-regions` | Enable detection of hardcoded region strings (disabled by default) |
 
 #### Exit Codes
 
@@ -249,6 +252,15 @@ Allow legitimate uses via:
    ```yaml
    - id: no-hardcoded-buckets
      exclude: ^tatari_data_utils/buckets.*\.py$
+   ```
+
+   **GX bucket exclusions**: The following repos currently define `tatari-gx-*` buckets in base classes and should exclude those paths until consolidated into `tatari-data-utils` (see [GX Upgrade Tech Spec](https://tatari.atlassian.net/wiki/spaces/ir/pages/2325053494/Tech+Spec+Great+Expectations+Upgrade)):
+   - `philo` - excludes `script/data_quality/gx_base.py`
+   - `python-tatari-pyspark` - excludes `tatari_pyspark/job/gx_base.py`
+
+   ```yaml
+   - id: no-hardcoded-buckets
+     exclude: gx_base\.py$
    ```
 
 5. **Comments and docstrings**: AST-based detection naturally ignores these since they're not `Constant` nodes in executable code. Regex-based detection should skip lines that are comments (`#`) or inside docstrings.
@@ -365,7 +377,7 @@ No security implications - this is a read-only static analysis tool.
 ## Resolved Questions
 
 - [x] **Should the hook also detect hardcoded region strings (`us-east-1`, `us-west-2`) outside of bucket contexts?**
-  - **Yes** - Flag hardcoded region strings as they indicate environment-specific logic that should use centralized utilities.
+  - **Not yet** - Region detection is available via `--check-regions` but disabled by default. We are not in a position to enforce this yet.
 
 - [x] **Should violations be warnings or hard failures by default?**
   - **Hard failures by default** - Use `--warn-only` flag to suppress failures and show warnings instead.

@@ -341,14 +341,14 @@ class TestMain:
         result = main(["--warn-only", str(SAMPLE_FILE)])
         assert result == 0  # Even with violations
 
-    def test_no_regions_flag(self):
+    def test_check_regions_flag(self):
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write('REGION = "us-east-1"\n')
             f.flush()
-            # With regions
+            # Without regions (default)
             result = main([f.name])
-            assert result == 1
-
-            # Without regions
-            result = main(["--no-regions", f.name])
             assert result == 0
+
+            # With regions enabled
+            result = main(["--check-regions", f.name])
+            assert result == 1

@@ -6,7 +6,7 @@ This hook prevents configuration sprawl by detecting:
 3. Environment-conditional bucket assignment patterns (AST-based)
 
 Usage:
-    python -m python_hooks.no_hardcoded_buckets [--warn-only] [--suggest] [--no-regions] [files...]
+    python -m python_hooks.no_hardcoded_buckets [--warn-only] [--suggest] [--check-regions] [files...]
 """
 from __future__ import annotations
 
@@ -326,9 +326,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Include suggested fixes in output",
     )
     parser.add_argument(
-        "--no-regions",
+        "--check-regions",
         action="store_true",
-        help="Disable detection of hardcoded region strings",
+        help="Enable detection of hardcoded region strings (disabled by default)",
     )
     parser.add_argument(
         "files",
@@ -342,7 +342,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     all_violations = []
     for filename in args.files:
-        violations = check_file(filename, check_regions=not args.no_regions)
+        violations = check_file(filename, check_regions=args.check_regions)
         all_violations.extend(violations)
 
     if all_violations:
