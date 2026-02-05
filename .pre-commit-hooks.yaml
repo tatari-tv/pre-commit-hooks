@@ -61,3 +61,10 @@
   entry: python -m python_hooks.image_tag_branch_constraint
   language: python
   types: [python]
+- id: no-non-spark-buckets-in-spark-projects
+  name: no-non-spark-buckets-in-spark-projects
+  description: Check for non-Spark bucket imports in projects using tatari-pyspark or tatari-ml-utils
+  additional_dependencies: [toml]
+  entry: python -m python_hooks.no_non_spark_buckets_in_spark_projects
+  language: python
+  types: [python]
