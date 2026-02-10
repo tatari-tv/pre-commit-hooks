@@ -14,6 +14,22 @@
   language: python
   pass_filenames: false
   files: ^(.*/)?pyproject.toml$
+- id: app-constraints
+  name: app-constraints
+  description: Evaluate if dependency constraints for applications follow Tatari's standards (currently only handles for uv format)
+  additional_dependencies: [toml]
+  entry: poetry run python -m python_hooks.app_constraints
+  language: python
+  pass_filenames: false
+  files: ^(.*/)?pyproject.toml$
+- id: pkg-constraints
+  name: pkg-constraints
+  description: Evaluate if dependency constraints for packages follow Tatari's standards (currently only handles for uv format)
+  additional_dependencies: [toml]
+  entry: poetry run python -m python_hooks.pkg_constraints
+  language: python
+  pass_filenames: false
+  files: ^(.*/)?pyproject.toml$
 - id: gitleaks
   name: gitleaks
   description: Download and run gitleaks binary
