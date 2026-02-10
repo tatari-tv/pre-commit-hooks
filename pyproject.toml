@@ -8,7 +8,7 @@ readme = "README.md"
 packages = [{include = "python_hooks"}]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 toml = "^0.10.2"
 
 [tool.poetry.group.dev.dependencies]
@@ -33,11 +33,11 @@ build-backend = "poetry_dynamic_versioning.backend"
 [tool.black]
 line-length = 140
 skip-string-normalization = true
-target_version = ['py39']
+target_version = ['py310']
 
 [tool.mypy]
 files = 'python_hooks'
-python_version = '3.9'
+python_version = '3.10'
 check_untyped_defs = false
 warn_incomplete_stub = true
 follow_imports = 'silent'
