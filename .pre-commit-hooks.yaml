@@ -68,3 +68,9 @@
   entry: python -m python_hooks.no_non_spark_buckets_in_spark_projects
   language: python
   types: [python]
+- id: no-boto3-in-airflow-dags
+  name: no-boto3-in-airflow-dags
+  description: Prevent direct boto3 imports that cause scheduler abuse via parse-time AWS calls
+  entry: python -m python_hooks.no_boto3_in_airflow_dags
+  language: python
+  types: [python]
