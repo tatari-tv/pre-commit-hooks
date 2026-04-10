@@ -63,6 +63,7 @@ def validate_args(args):
 
 
 def run(args):
+    """Run identifier checks across all provided files and return the combined exit code."""
     return_code = 0
 
     for file_path in args.file_list:
@@ -72,6 +73,7 @@ def run(args):
 
 
 def main():
+    """CLI entry point for the disallowed-identifiers pre-commit hook."""
     parser = argparse.ArgumentParser(description='Flags problematic code and suggests replacement code')
     parser.add_argument('--identifier', type=Identifier, choices=list(Identifier), required=True)
     parser.add_argument('--disallowed', nargs='+', help='Disallowed identifier names to check for in code', required=True)

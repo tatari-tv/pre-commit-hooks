@@ -24,6 +24,7 @@ def filter_files(file_list: list[str]) -> list[str]:
 
 
 def main():
+    """CLI entry point for the do-not-support-generated-columns pre-commit hook."""
     parser = argparse.ArgumentParser(description='prevent postgres migrations using generated columns')
     parser.add_argument('file_list', nargs='+', help='List of files to check')  # provided by the pre-commit call
     args = parser.parse_args()

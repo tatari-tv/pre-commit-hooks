@@ -56,6 +56,7 @@ def validate_package_constraint(dep_name: str, constraint: str) -> int:
 
 
 def main():
+    """CLI entry point for the poetry-pkg-constraints pre-commit hook."""
     parser = ArgumentParser(description="Validate dependency constraint formats for Python package repos.")
     parser.add_argument("--ignore", nargs='+', default=[], help="List of packages to ignore constraint checking for.")
     args = parser.parse_args()

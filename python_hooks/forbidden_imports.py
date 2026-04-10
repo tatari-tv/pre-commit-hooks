@@ -17,6 +17,7 @@ def check_imports(filename, forbidden_classes):
 
 
 def main():
+    """CLI entry point for the forbidden-imports pre-commit hook."""
     parser = argparse.ArgumentParser(description='Check for specific imports')
     parser.add_argument('--forbidden_classes', nargs='+', help='Names of the classes to check in imports')
     parser.add_argument('file_list', nargs='+', help='List of files to check')  # provided by the pre-commit call

@@ -17,6 +17,7 @@ def check_poetry(filename):
 
 
 def main():
+    """CLI entry point for the dockerfile-poetry pre-commit hook."""
     parser = argparse.ArgumentParser(description='Check if Dockerfile specifies a poetry version on install')
     parser.add_argument('file_list', nargs='+', help='List of files to check')  # provided by the pre-commit call
     args = parser.parse_args()

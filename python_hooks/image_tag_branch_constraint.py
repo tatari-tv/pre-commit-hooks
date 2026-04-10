@@ -36,6 +36,7 @@ def check_file(filename):
 
 
 def main():
+    """CLI entry point for the image-tag-branch-constraint pre-commit hook."""
     parser = argparse.ArgumentParser(description='Prevents specification of image_tag and branch in DatabricksOperator')
     parser.add_argument('file_list', nargs='+', help='List of files to check')  # provided by the pre-commit call
     args = parser.parse_args()
