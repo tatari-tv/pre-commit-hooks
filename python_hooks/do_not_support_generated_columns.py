@@ -23,18 +23,20 @@ def filter_files(file_list: list[str]) -> list[str]:
     return [file for file in file_list if re.match(FILE_REGEX, os.path.basename(file)).group() >= CUTOFF_DATE]  # type: ignore
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description='prevent postgres migrations using generated columns')
     parser.add_argument('file_list', nargs='+', help='List of files to check')  # provided by the pre-commit call
     args = parser.parse_args()
     return_code = 0
 
-    file_list = args.file_list
-
     # filter files to exlude older migrations
-    filter_file_list = filter_files(file_list)
+    filter_file_list = filter_files(args.file_list)
 
     for file_path in filter_file_list:
         return_code |= check_file(file_path)
 
     sys.exit(return_code)
+
+
+if __name__ == "__main__":
+    main()

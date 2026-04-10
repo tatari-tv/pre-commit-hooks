@@ -62,7 +62,7 @@ def validate_args(args):
         raise ValueError("Number of replacements does not match the number to check")
 
 
-def main(args):
+def run(args):
     return_code = 0
 
     for file_path in args.file_list:
@@ -71,7 +71,7 @@ def main(args):
     return return_code
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description='Flags problematic code and suggests replacement code')
     parser.add_argument('--identifier', type=Identifier, choices=list(Identifier), required=True)
     parser.add_argument('--disallowed', nargs='+', help='Disallowed identifier names to check for in code', required=True)
@@ -80,5 +80,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     validate_args(args)
-    return_code = main(args)
-    sys.exit(return_code)
+    sys.exit(run(args))
+
+
+if __name__ == "__main__":
+    main()

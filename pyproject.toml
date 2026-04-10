@@ -11,6 +11,18 @@ packages = [{include = "python_hooks"}]
 python = "^3.9"
 toml = "^0.10.2"
 
+[tool.poetry.scripts]
+poetry-app-constraints = "python_hooks.poetry_app_constraints:main"
+poetry-pkg-constraints = "python_hooks.poetry_pkg_constraints:main"
+forbidden-imports = "python_hooks.forbidden_imports:main"
+disallowed-identifiers = "python_hooks.disallowed_identifiers:main"
+dockerfile-poetry = "python_hooks.dockerfile_poetry:main"
+do-not-support-generated-columns = "python_hooks.do_not_support_generated_columns:main"
+validate-branch-name = "python_hooks.validate_branch_name:main"
+image-tag-branch-constraint = "python_hooks.image_tag_branch_constraint:main"
+no-non-spark-buckets-in-spark-projects = "python_hooks.no_non_spark_buckets_in_spark_projects:main"
+no-boto3-in-airflow-dags = "python_hooks.no_boto3_in_airflow_dags:main"
+
 [tool.poetry.group.dev.dependencies]
 black = "24.3.0"
 flake8 = "6.0.0"

@@ -2,7 +2,7 @@
   name: poetry-app-constraints
   description: Evaluate if Poetry dependency constraints for application follow Tatari's standards
   additional_dependencies: [toml]
-  entry: python -m python_hooks.poetry_app_constraints
+  entry: poetry-app-constraints
   language: python
   pass_filenames: false
   files: ^(.*/)?pyproject.toml$
@@ -10,7 +10,7 @@
   name: poetry-pkg-constraints
   description: Evaluate if Poetry dependency constraints for packages follow Tatari's standards
   additional_dependencies: [toml]
-  entry: python -m python_hooks.poetry_pkg_constraints
+  entry: poetry-pkg-constraints
   language: python
   pass_filenames: false
   files: ^(.*/)?pyproject.toml$
@@ -23,19 +23,19 @@
 - id: forbidden-imports
   name: forbidden-imports
   description: Check for forbidden imports specified in args bn
-  entry: python -m python_hooks.forbidden_imports
+  entry: forbidden-imports
   language: python
   types: [python]
 - id: disallowed-identifiers
   name: disallowed-identifiers
   description: Check for disallowed identifiers specified in args bn
-  entry: python -m python_hooks.disallowed_identifiers
+  entry: disallowed-identifiers
   language: python
   types: [python]
 - id: dockerfile-poetry
   name: dockerfile-poetry
   description: Check if Dockerfile specifies a poetry version on install
-  entry: python -m python_hooks.dockerfile_poetry
+  entry: dockerfile-poetry
   language: python
   files: .*Dockerfile.*
 - id: deptry
@@ -45,32 +45,32 @@
   pass_filenames: false
 - id: do-not-support-generated-columns
   name: do-not-support-generated-columns
-  entry: python -m python_hooks.do_not_support_generated_columns
+  entry: do-not-support-generated-columns
   language: python
   types: [sql]
 - id: validate-branch-name
   name: validate-branch-name
   description: Checks that branch name is in the expected format
-  entry: python -m python_hooks.validate_branch_name
+  entry: validate-branch-name
   language: python
   types: [python]
   pass_filenames: false
 - id: image-tag-branch-constraint
   name: image-tag-branch-constraint
   description: Check for image_tag and branch
-  entry: python -m python_hooks.image_tag_branch_constraint
+  entry: image-tag-branch-constraint
   language: python
   types: [python]
 - id: no-non-spark-buckets-in-spark-projects
   name: no-non-spark-buckets-in-spark-projects
   description: Check for non-Spark bucket imports in projects using tatari-pyspark or tatari-ml-utils
   additional_dependencies: [toml]
-  entry: python -m python_hooks.no_non_spark_buckets_in_spark_projects
+  entry: no-non-spark-buckets-in-spark-projects
   language: python
   types: [python]
 - id: no-boto3-in-airflow-dags
   name: no-boto3-in-airflow-dags
   description: Prevent direct boto3 imports that cause scheduler abuse via parse-time AWS calls
-  entry: python -m python_hooks.no_boto3_in_airflow_dags
+  entry: no-boto3-in-airflow-dags
   language: python
   types: [python]

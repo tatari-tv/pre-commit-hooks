@@ -55,8 +55,12 @@ def validate_package_constraint(dep_name: str, constraint: str) -> int:
     return 0
 
 
-if __name__ == '__main__':
+def main():
     parser = ArgumentParser(description="Validate dependency constraint formats for Python application repos.")
     parser.add_argument("--ignore", nargs='+', default=[], help="List of packages to ignore constraint checking for.")
     args = parser.parse_args()
     exit(validate_constraints(args.ignore))
+
+
+if __name__ == '__main__':
+    main()

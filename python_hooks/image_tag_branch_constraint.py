@@ -35,15 +35,17 @@ def check_file(filename):
     return 0  # Indicates success
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description='Prevents specification of image_tag and branch in DatabricksOperator')
     parser.add_argument('file_list', nargs='+', help='List of files to check')  # provided by the pre-commit call
     args = parser.parse_args()
-
-    file_list = args.file_list
     return_code = 0
 
-    for file_path in file_list:
+    for file_path in args.file_list:
         return_code |= check_file(file_path)
 
     sys.exit(return_code)
+
+
+if __name__ == "__main__":
+    main()
