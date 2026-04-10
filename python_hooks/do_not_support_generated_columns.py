@@ -20,7 +20,7 @@ def check_file(filename):
 
 
 def filter_files(file_list: list[str]) -> list[str]:
-    return [file for file in file_list if re.match(FILE_REGEX, os.path.basename(file)).group() >= CUTOFF_DATE]  # type: ignore
+    return [file for file in file_list if (m := re.match(FILE_REGEX, os.path.basename(file))) and m.group() >= CUTOFF_DATE]
 
 
 def main():
