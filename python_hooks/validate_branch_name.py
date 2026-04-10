@@ -18,7 +18,8 @@ def validate_branch_name(branch) -> int:
     return 1
 
 
-if __name__ == "__main__":
+def main():
+    """CLI entry point for the validate-branch-name pre-commit hook."""
     # use GITHUB_REF_NAME, set from github actions, if available.
     # Github actions does a shallow clone of the repo with only the first commit by default, so no branch names are available.
     branch = os.environ.get('GITHUB_REF_NAME')
@@ -28,3 +29,7 @@ if __name__ == "__main__":
 
     return_code = validate_branch_name(branch)
     sys.exit(return_code)
+
+
+if __name__ == "__main__":
+    main()
