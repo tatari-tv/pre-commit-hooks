@@ -74,3 +74,9 @@
   entry: no-boto3-in-airflow-dags
   language: python
   types: [python]
+- id: no-hardcoded-buckets
+  name: no-hardcoded-buckets
+  description: Check for hardcoded Tatari S3 bucket names
+  entry: python -m python_hooks.no_hardcoded_buckets
+  language: python
+  types: [python]
