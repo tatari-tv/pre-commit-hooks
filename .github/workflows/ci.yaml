@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Setup Python ${{env.PYTHON_VERSION}}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: ${{env.PYTHON_VERSION}}
       - name: Install Poetry
@@ -45,7 +45,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Setup Python ${{env.PYTHON_VERSION}}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: ${{env.PYTHON_VERSION}}
       - name: Install Poetry
@@ -73,7 +73,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Setup Python ${{env.PYTHON_VERSION}}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: ${{env.PYTHON_VERSION}}
       - name: Install Poetry
