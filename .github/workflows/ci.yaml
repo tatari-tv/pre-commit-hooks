@@ -20,9 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - name: Setup Python ${{env.PYTHON_VERSION}}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: ${{env.PYTHON_VERSION}}
       - name: Install Poetry
@@ -43,9 +43,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - name: Setup Python ${{env.PYTHON_VERSION}}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: ${{env.PYTHON_VERSION}}
       - name: Install Poetry
@@ -60,7 +60,7 @@ jobs:
         shell: bash
         run: poetry install
       - name: cache pre-commit
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: ~/.cache/pre-commit/
           key: pre-commit-${{runner.os}}-${{env.PYTHON_VERSION}}-${{hashFiles('.pre-commit-config.yaml')}}
@@ -71,9 +71,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - name: Setup Python ${{env.PYTHON_VERSION}}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: ${{env.PYTHON_VERSION}}
       - name: Install Poetry

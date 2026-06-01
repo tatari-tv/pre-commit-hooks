@@ -8,7 +8,7 @@ import pytest
 from python_hooks.disallowed_identifiers import check_identifiers
 from python_hooks.disallowed_identifiers import DISALLOWED_MESSAGE
 from python_hooks.disallowed_identifiers import Identifier
-from python_hooks.disallowed_identifiers import main
+from python_hooks.disallowed_identifiers import run as main
 from python_hooks.disallowed_identifiers import validate_args
 from python_hooks.utills.ignore_check import IdentifierCheck
 

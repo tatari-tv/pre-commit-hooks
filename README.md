@@ -7,25 +7,47 @@ Place to store all of Tatari's custom [pre-commit hooks](https://pre-commit.com/
 
 ## Adding a new hook
 
-Depending in which language your hook is written, you will need to commit your hook script in different locations:
-* [Python](https://pre-commit.com/#python): [python_hooks/](./python_hooks)
-  * Ensure you add any dependencies necessary for your hook by running `poetry add <dep>` followed by `poetry lock`
-* [Bash](https://pre-commit.com/#system): root of repo
+### Python hooks
 
-Then define your hook in [.pre-commit-hooks.yaml](./.pre-commit-hooks.yaml).  Full format of hook definition can be found
-[here](https://pre-commit.com/#creating-new-hooks).
+1. **Write the module** in [`python_hooks/`](./python_hooks).  Add a no-arg `main()` function that is the CLI entry point:
 
-Python example:
-```yaml
-- id: python-example
-  name: python-example
-  description: Run a Python pre-commit hook
-  entry: poetry run python -m python_hooks.python_script.py
-  language: python
-  pass_filenames: false
-```
+   ```python
+   def main():
+       """CLI entry point for the my-hook pre-commit hook."""
+       parser = argparse.ArgumentParser(...)
+       args = parser.parse_args()
+       sys.exit(run(args))
 
-Bash example:
+   if __name__ == "__main__":
+       main()
+   ```
+
+2. **Register the console script** in [`pyproject.toml`](./pyproject.toml) under `[tool.poetry.scripts]`:
+
+   ```toml
+   [tool.poetry.scripts]
+   my-hook = "python_hooks.my_hook:main"
+   ```
+
+3. **Add any required dependencies** with `poetry add <dep>` followed by `poetry lock`.
+
+4. **Define the hook** in [`.pre-commit-hooks.yaml`](./.pre-commit-hooks.yaml) using the console script name as `entry`:
+
+   ```yaml
+   - id: my-hook
+     name: my-hook
+     description: Run a Python pre-commit hook
+     entry: my-hook
+     language: python
+     pass_filenames: false
+   ```
+
+   > **Why a console script?** Tools like [prek](https://github.com/domodwyer/prek) resolve `entry` as an installed binary rather than a shell command, so `python -m ...` does not work. Registering a console script in `pyproject.toml` ensures the hook runs correctly with both pre-commit and prek.
+
+### Bash hooks
+
+Place the script at the root of the repo and define the hook in [`.pre-commit-hooks.yaml`](./.pre-commit-hooks.yaml):
+
 ```yaml
 - id: bash-example
   name: bash-example
