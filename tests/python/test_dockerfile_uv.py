@@ -18,6 +18,12 @@ from python_hooks.dockerfile_uv import check_uv
         ("RUN pip install poetry~=1.7.1\n", 1),
         # commented-out pin must not satisfy the check
         ("RUN pip install uv\n# uv==0.7.14\n", 1),
+        # inline comment must not satisfy the check
+        ("RUN pip install uv  # uv==0.7.14\n", 1),
+        # non-install command (echo) must not satisfy the check
+        ('RUN echo "uv==0.7.14"\n', 1),
+        # line continuation in a RUN install still counts
+        ("RUN pip install \\\n    uv==0.7.14\n", 0),
     ],
 )
 def test_dockerfile_uv(tmp_path, content, expected):
