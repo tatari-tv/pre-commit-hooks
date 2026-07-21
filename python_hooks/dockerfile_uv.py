@@ -5,7 +5,6 @@ The uv counterpart of ``dockerfile-poetry``. Matches any of the pinning styles
 we use: a direct ``uv==0.7.14`` install, an ``ARG UV_VERSION="0.7.14"`` pin, or a
 uv-pinned base image tag such as ``python:3.11-uv0.9.16-onbuild-lambda``.
 '''
-
 import argparse
 import re
 import sys
@@ -17,7 +16,10 @@ def check_uv(filename: str) -> int:
     with open(filename) as file:
         dockerfile = file.read()
 
-    if not re.search(REGEX_MATCH, dockerfile, re.IGNORECASE):
+    # Ignore comment-only lines so a commented-out pin can't satisfy the check.
+    instructions = '\n'.join(line for line in dockerfile.splitlines() if not line.lstrip().startswith('#'))
+
+    if not re.search(REGEX_MATCH, instructions, re.IGNORECASE):
         print(f'uv version needs to be pinned in {filename} (e.g. ARG UV_VERSION=0.7.14 or pip install uv==0.7.14)')
         return 1
 

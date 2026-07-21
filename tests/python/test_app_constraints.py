@@ -21,6 +21,8 @@ from tests.python.test_utils.test_toml import write_uv_pyproject_toml
         (["tatari-foo~=1.2"], "~=3.12.0", 1),
         # unbounded requires-python -> fail
         (["tatari-foo>=1.2.0,<2.0.0"], ">=3.12", 1),
+        # missing requires-python -> fail
+        (["tatari-foo>=1.2.0,<2.0.0"], None, 1),
     ],
 )
 def test_app_constraints(dependencies, requires_python, expected):

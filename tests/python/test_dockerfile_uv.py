@@ -16,6 +16,8 @@ from python_hooks.dockerfile_uv import check_uv
         ("RUN pip install uv\n", 1),
         # poetry-pinned Dockerfile has no uv pin -> fail
         ("RUN pip install poetry~=1.7.1\n", 1),
+        # commented-out pin must not satisfy the check
+        ("RUN pip install uv\n# uv==0.7.14\n", 1),
     ],
 )
 def test_dockerfile_uv(tmp_path, content, expected):

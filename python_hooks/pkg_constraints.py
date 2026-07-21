@@ -13,7 +13,6 @@ Deps that must stay exact can be passed via ``--ignore``. This hook only
 validates uv/PEP 621 projects; Poetry projects are covered by
 ``poetry-pkg-constraints``.
 '''
-
 from argparse import ArgumentParser
 from collections.abc import Iterator
 from re import match
@@ -36,7 +35,8 @@ def _iter_dependencies(pyproject: dict) -> Iterator[tuple[str, str]]:
         name_match = match(r'[A-Za-z0-9][A-Za-z0-9._-]*', spec)
         if not name_match:
             continue
-        rest = spec[name_match.end() :].strip()
+        end = name_match.end()
+        rest = spec[end:].strip()
         if rest.startswith('['):  # drop extras, e.g. acryl-datahub[datahub-rest]
             _, _, rest = rest.partition(']')
             rest = rest.strip()
@@ -57,8 +57,7 @@ def validate_constraints(ignore: list[str], pyproject_path: str = 'pyproject.tom
     exit_status = 0
 
     requires_python = (pyproject.get('project') or {}).get('requires-python')
-    if requires_python is not None:
-        exit_status |= _validate_python_constraint(requires_python)
+    exit_status |= _validate_python_constraint(requires_python)
 
     for name, specifier in _iter_dependencies(pyproject):
         if _normalize(name) in ignored or not _has_version(specifier):
@@ -68,7 +67,11 @@ def validate_constraints(ignore: list[str], pyproject_path: str = 'pyproject.tom
     return exit_status
 
 
-def _validate_python_constraint(constraint: str) -> int:
+def _validate_python_constraint(constraint: str | None) -> int:
+    if not constraint:
+        print('INCORRECT FORMAT: requires-python is missing')
+        print('Packages must declare requires-python using >= (or ~=), e.g. ">=3.12".')
+        return 1
     if '>=' not in constraint and '~=' not in constraint:
         print(f'INCORRECT FORMAT: requires-python = "{constraint}"')
         print('Packages should use >= (or ~=) for requires-python, e.g. ">=3.12".')

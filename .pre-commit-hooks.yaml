@@ -87,7 +87,7 @@
   entry: app-constraints
   language: python
   pass_filenames: false
-  files: ^(.*/)?pyproject.toml$
+  files: ^pyproject\.toml$
 - id: pkg-constraints
   name: pkg-constraints
   description: Evaluate if uv (PEP 621) dependency constraints for packages follow Tatari's standards
@@ -95,7 +95,7 @@
   entry: pkg-constraints
   language: python
   pass_filenames: false
-  files: ^(.*/)?pyproject.toml$
+  files: ^pyproject\.toml$
 - id: dockerfile-uv
   name: dockerfile-uv
   description: Check if Dockerfile pins a uv version on install
