@@ -77,6 +77,28 @@
 - id: no-hardcoded-buckets
   name: no-hardcoded-buckets
   description: Check for hardcoded Tatari S3 bucket names
-  entry: python -m python_hooks.no_hardcoded_buckets
+  entry: no-hardcoded-buckets
   language: python
   types: [python]
+- id: app-constraints
+  name: app-constraints
+  description: Evaluate if uv (PEP 621) dependency constraints for applications follow Tatari's standards
+  additional_dependencies: [toml]
+  entry: app-constraints
+  language: python
+  pass_filenames: false
+  files: ^(.*/)?pyproject.toml$
+- id: pkg-constraints
+  name: pkg-constraints
+  description: Evaluate if uv (PEP 621) dependency constraints for packages follow Tatari's standards
+  additional_dependencies: [toml]
+  entry: pkg-constraints
+  language: python
+  pass_filenames: false
+  files: ^(.*/)?pyproject.toml$
+- id: dockerfile-uv
+  name: dockerfile-uv
+  description: Check if Dockerfile pins a uv version on install
+  entry: dockerfile-uv
+  language: python
+  files: .*Dockerfile.*
