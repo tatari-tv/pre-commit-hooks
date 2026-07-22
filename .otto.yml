@@ -12,10 +12,10 @@ tasks:
 
   # Development setup
   dev:
-    help: "Install development dependencies using Poetry"
+    help: "Install development dependencies using uv"
     action: |
       #!/bin/bash
-      poetry install
+      uv sync
 
   # Testing tasks
   unit-test:
@@ -23,7 +23,7 @@ tasks:
     before: [dev]
     action: |
       #!/bin/bash
-      poetry run pytest tests/python
+      uv run pytest tests/python
 
   # Code quality tasks
   type-check:
@@ -31,14 +31,14 @@ tasks:
     before: [dev]
     action: |
       #!/bin/bash
-      poetry run mypy
+      uv run mypy
 
   lint:
     help: "Run linting with pre-commit hooks"
     before: [dev]
     action: |
       #!/bin/bash
-      poetry run pre-commit run --all-files
+      uv run pre-commit run --all-files
 
   # Cleanup task
   clean:
