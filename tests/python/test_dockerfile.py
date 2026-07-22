@@ -24,6 +24,11 @@ from python_hooks.dockerfile import check_uv
         ('RUN echo "uv==0.7.14"\n', 1),
         # line continuation in a RUN install still counts
         ("RUN pip install \\\n    uv==0.7.14\n", 0),
+        # uninstall is not install -> fail
+        ("RUN pip uninstall uv==0.7.14\n", 1),
+        # trailing junk on the version -> not a valid pin
+        ("RUN pip install uv==0.7.14junk\n", 1),
+        ('ARG UV_VERSION="0.7.14junk"\nRUN pip install uv==${UV_VERSION}\n', 1),
     ],
 )
 def test_dockerfile(tmp_path, content, expected):

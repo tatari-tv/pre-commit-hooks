@@ -15,9 +15,12 @@ import argparse
 import re
 import sys
 
-_FROM_PIN = re.compile(r'[-:]uv[\d.]+', re.IGNORECASE)
-_ARG_PIN = re.compile(r'UV_VERSION\s*=\s*["\']?[\d.]+', re.IGNORECASE)
-_RUN_PIN = re.compile(r'\buv==[\d.]+')
+# Version tokens end on a boundary so malformed refs like `0.7.14junk` don't
+# validate; `_INSTALL` matches `install` but not `uninstall`.
+_FROM_PIN = re.compile(r'[-:]uv\d[\d.]*(?![\w.])', re.IGNORECASE)
+_ARG_PIN = re.compile(r'UV_VERSION\s*=\s*["\']?\d[\d.]*(?![\w.])', re.IGNORECASE)
+_RUN_PIN = re.compile(r'\buv==\d[\d.]*(?![\w.])')
+_INSTALL = re.compile(r'(?<![a-z])install\b', re.IGNORECASE)
 
 
 def _pins_uv(instruction: str) -> bool:
@@ -31,7 +34,7 @@ def _pins_uv(instruction: str) -> bool:
     if keyword == 'ARG':
         return bool(_ARG_PIN.search(text))
     if keyword == 'RUN':
-        return 'install' in text.lower() and bool(_RUN_PIN.search(text))
+        return bool(_INSTALL.search(text)) and bool(_RUN_PIN.search(text))
     return False
 
 
