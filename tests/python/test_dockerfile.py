@@ -1,6 +1,6 @@
 import pytest
 
-from python_hooks.dockerfile_uv import check_uv
+from python_hooks.dockerfile import check_uv
 
 
 @pytest.mark.parametrize(
@@ -26,7 +26,7 @@ from python_hooks.dockerfile_uv import check_uv
         ("RUN pip install \\\n    uv==0.7.14\n", 0),
     ],
 )
-def test_dockerfile_uv(tmp_path, content, expected):
+def test_dockerfile(tmp_path, content, expected):
     dockerfile = tmp_path / "Dockerfile"
     dockerfile.write_text(content)
     assert check_uv(str(dockerfile)) == expected

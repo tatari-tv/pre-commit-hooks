@@ -25,7 +25,7 @@ no-boto3-in-airflow-dags = "python_hooks.no_boto3_in_airflow_dags:main"
 no-hardcoded-buckets = "python_hooks.no_hardcoded_buckets:main"
 app-constraints = "python_hooks.app_constraints:main"
 pkg-constraints = "python_hooks.pkg_constraints:main"
-dockerfile-uv = "python_hooks.dockerfile_uv:main"
+dockerfile = "python_hooks.dockerfile:main"
 
 [tool.poetry.group.dev.dependencies]
 black = "24.3.0"

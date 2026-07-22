@@ -96,9 +96,9 @@
   language: python
   pass_filenames: false
   files: ^pyproject\.toml$
-- id: dockerfile-uv
-  name: dockerfile-uv
+- id: dockerfile
+  name: dockerfile
   description: Check if Dockerfile pins a uv version on install
-  entry: dockerfile-uv
+  entry: dockerfile
   language: python
   files: .*Dockerfile.*

@@ -51,7 +51,7 @@ def check_uv(filename: str) -> int:
 
 
 def main() -> None:
-    '''CLI entry point for the dockerfile-uv pre-commit hook.'''
+    '''CLI entry point for the dockerfile pre-commit hook.'''
     parser = argparse.ArgumentParser(description='Check if Dockerfile pins a uv version on install')
     parser.add_argument('file_list', nargs='+', help='List of files to check')  # provided by the pre-commit call
     args = parser.parse_args()
