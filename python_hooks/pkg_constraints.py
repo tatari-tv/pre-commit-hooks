@@ -9,9 +9,7 @@ open lower-bound constraints for downstream flexibility:
   (e.g. ``tatari-foo>=1.2.0``)
 - ``requires-python`` uses ``>=`` or ``~=``
 
-Deps that must stay exact can be passed via ``--ignore``. This hook only
-validates uv/PEP 621 projects; Poetry projects are covered by
-``poetry-pkg-constraints``.
+Deps that must stay exact can be passed via ``--ignore``.
 '''
 from argparse import ArgumentParser
 from collections.abc import Iterator
@@ -49,10 +47,6 @@ def _has_version(specifier: str) -> bool:
 
 def validate_constraints(ignore: list[str], pyproject_path: str = 'pyproject.toml') -> int:
     pyproject = load(pyproject_path)
-    if 'dependencies' not in (pyproject.get('project') or {}):
-        print('ERROR: pkg-constraints only validates uv/PEP 621 projects ([project.dependencies]).')
-        return 1
-
     ignored = {_normalize(name) for name in ignore}
     exit_status = 0
 

@@ -10,8 +10,7 @@ use bounded (poetry-caret-equivalent) constraints:
 - ``requires-python`` is bounded (``~=``, ``==X.Y.*``, or ``>=,<``)
 
 Runtime pins that must stay exact (e.g. ``pyspark``, ``delta-spark``) are passed
-via ``--ignore``. This hook only validates uv/PEP 621 projects; Poetry projects
-are covered by ``poetry-app-constraints``.
+via ``--ignore``.
 '''
 from argparse import ArgumentParser
 from collections.abc import Iterator
@@ -49,10 +48,6 @@ def _has_version(specifier: str) -> bool:
 
 def validate_constraints(ignore: list[str], pyproject_path: str = 'pyproject.toml') -> int:
     pyproject = load(pyproject_path)
-    if 'dependencies' not in (pyproject.get('project') or {}):
-        print('ERROR: app-constraints only validates uv/PEP 621 projects ([project.dependencies]).')
-        return 1
-
     ignored = {_normalize(name) for name in ignore}
     exit_status = 0
 

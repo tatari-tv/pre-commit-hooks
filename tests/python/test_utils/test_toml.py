@@ -12,9 +12,11 @@ def write_pyproject_toml(temp_dir: str, deps: dict[str, str]) -> str:
     return toml_file_path
 
 
-def write_uv_pyproject_toml(temp_dir: str, dependencies: list[str], requires_python: str | None = None) -> str:
+def write_uv_pyproject_toml(temp_dir: str, dependencies: list[str] | None = None, requires_python: str | None = None) -> str:
     toml_file_path = os.path.join(temp_dir, "pyproject.toml")
-    project: dict = {"dependencies": list(dependencies)}
+    project: dict = {}
+    if dependencies is not None:
+        project["dependencies"] = list(dependencies)
     if requires_python is not None:
         project["requires-python"] = requires_python
     with open(toml_file_path, "w") as toml_file:

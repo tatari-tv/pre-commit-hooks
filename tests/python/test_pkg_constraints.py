@@ -1,8 +1,6 @@
-import os
 import tempfile
 
 import pytest
-import toml
 
 from python_hooks.pkg_constraints import validate_constraints
 from tests.python.test_utils.test_toml import write_uv_pyproject_toml
@@ -36,11 +34,3 @@ def test_pkg_constraints_ignore():
         pyproject = write_uv_pyproject_toml(temp_dir, dependencies, requires_python=">=3.12")
         assert validate_constraints(["pinned"], pyproject) == 0
         assert validate_constraints([], pyproject) == 1
-
-
-def test_pkg_constraints_rejects_poetry_project():
-    with tempfile.TemporaryDirectory() as temp_dir:
-        path = os.path.join(temp_dir, "pyproject.toml")
-        with open(path, "w") as f:
-            toml.dump({"tool": {"poetry": {"dependencies": {"python": "^3.12"}}}}, f)
-        assert validate_constraints([], path) == 1

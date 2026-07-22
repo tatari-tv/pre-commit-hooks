@@ -1,8 +1,6 @@
-import os
 import tempfile
 
 import pytest
-import toml
 
 from python_hooks.app_constraints import validate_constraints
 from tests.python.test_utils.test_toml import write_uv_pyproject_toml
@@ -47,9 +45,10 @@ def test_app_constraints_skips_unpinned_and_url_deps():
         assert validate_constraints([], pyproject) == 0
 
 
-def test_app_constraints_rejects_poetry_project():
+def test_app_constraints_uv_project_without_dependencies_key():
+    # A valid uv project may omit [project.dependencies]; it must validate on
+    # requires-python alone, not be rejected. (Regression: the removed
+    # poetry-detection guard used to fail this.)
     with tempfile.TemporaryDirectory() as temp_dir:
-        path = os.path.join(temp_dir, "pyproject.toml")
-        with open(path, "w") as f:
-            toml.dump({"tool": {"poetry": {"dependencies": {"python": "~3.12"}}}}, f)
-        assert validate_constraints([], path) == 1
+        pyproject = write_uv_pyproject_toml(temp_dir, requires_python="~=3.12.0")
+        assert validate_constraints([], pyproject) == 0
