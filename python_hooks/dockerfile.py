@@ -1,8 +1,8 @@
 '''
 Check that a Dockerfile pins a uv version on install.
 
-The uv counterpart of ``dockerfile-poetry``. Accepts a pinned uv version in any
-instruction form we use, and only in a real instruction:
+Accepts a pinned uv version in any instruction form we use, and only in a real
+instruction:
 
 - ``RUN ... install uv==0.7.14`` (direct pin in an install command)
 - ``ARG UV_VERSION="0.7.14"`` (build-arg pin, referenced as ``uv==${UV_VERSION}``)

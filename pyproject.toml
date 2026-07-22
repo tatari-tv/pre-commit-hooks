@@ -12,11 +12,8 @@ python = "^3.10"
 toml = "^0.10.2"
 
 [tool.poetry.scripts]
-poetry-app-constraints = "python_hooks.poetry_app_constraints:main"
-poetry-pkg-constraints = "python_hooks.poetry_pkg_constraints:main"
 forbidden-imports = "python_hooks.forbidden_imports:main"
 disallowed-identifiers = "python_hooks.disallowed_identifiers:main"
-dockerfile-poetry = "python_hooks.dockerfile_poetry:main"
 do-not-support-generated-columns = "python_hooks.do_not_support_generated_columns:main"
 validate-branch-name = "python_hooks.validate_branch_name:main"
 image-tag-branch-constraint = "python_hooks.image_tag_branch_constraint:main"
