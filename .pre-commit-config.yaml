@@ -63,3 +63,12 @@ repos:
     rev: v0.4.0
     hooks:
       - id: gitleaks
+  - repo: local
+    hooks:
+      # Dogfood our own uv/PEP-621 package-constraint hook on this repo's pyproject.
+      - id: pkg-constraints
+        name: pkg-constraints
+        entry: pkg-constraints
+        language: system
+        files: ^pyproject\.toml$
+        pass_filenames: false
