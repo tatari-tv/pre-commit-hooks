@@ -47,6 +47,25 @@ dependencies = ["pyspark==3.5.0"]
         )
         assert is_spark_project(pyproject) is True
 
+        # Underscore and mixed-case/dot spellings normalize (PEP 503)
+        pyproject.write_text(
+            """
+[project]
+name = "test-project"
+dependencies = ["python_tatari_pyspark>=5.0.0"]
+"""
+        )
+        assert is_spark_project(pyproject) is True
+
+        pyproject.write_text(
+            """
+[project]
+name = "test-project"
+dependencies = ["Python.Tatari.PySpark>=5.0.0"]
+"""
+        )
+        assert is_spark_project(pyproject) is True
+
         # Test without Spark dependencies
         pyproject.write_text(
             """
