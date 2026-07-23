@@ -79,4 +79,4 @@
   description: Check if Dockerfile pins a uv version on install
   entry: dockerfile
   language: python
-  files: .*Dockerfile.*
+  files: (^|/)Dockerfile([.-][^/]*)?$
