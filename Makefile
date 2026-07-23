@@ -6,21 +6,21 @@ all: dev unit-test type-check lint
 # dev targets
 .PHONY: dev
 dev:
-	poetry install
+	uv sync
 
 
 # Testing related targets
 .PHONY: unit-test
 unit-test: dev
-	poetry run pytest tests/python
+	uv run pytest tests/python
 
 .PHONY: type-check
 type-check: dev
-	poetry run mypy
+	uv run mypy
 
 .PHONY: lint
 lint: dev
-	poetry run pre-commit run --all-files
+	uv run pre-commit run --all-files
 
 
 # Clean
