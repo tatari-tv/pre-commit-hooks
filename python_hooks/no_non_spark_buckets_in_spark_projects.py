@@ -51,6 +51,14 @@ SPARK_DEPENDENCIES = {
 }
 
 
+def _canonical_name(name: str) -> str:
+    """PEP 503 name normalization: lowercase, collapse runs of -_. into a single -."""
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
+_SPARK_DEPENDENCIES_CANONICAL = {_canonical_name(dep) for dep in SPARK_DEPENDENCIES}
+
+
 @dataclass
 class Violation:
     """Represents a detected violation."""
@@ -85,13 +93,13 @@ def is_spark_project(pyproject_path: Path) -> bool:
         with open(pyproject_path) as f:
             data = toml.load(f)
 
-        # Check poetry dependencies
-        if "tool" in data and "poetry" in data["tool"]:
-            dependencies = data["tool"]["poetry"].get("dependencies", {})
+        # PEP 621 / uv dependencies: a list of requirement strings.
+        dependencies = data.get("project", {}).get("dependencies", [])
 
-            for dep_name in dependencies:
-                if dep_name in SPARK_DEPENDENCIES:
-                    return True
+        for dep in dependencies:
+            match = re.match(r"[A-Za-z0-9][A-Za-z0-9._-]*", dep.strip())
+            if match and _canonical_name(match.group(0)) in _SPARK_DEPENDENCIES_CANONICAL:
+                return True
 
         return False
     except Exception:

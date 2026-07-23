@@ -1,19 +1,3 @@
-- id: poetry-app-constraints
-  name: poetry-app-constraints
-  description: Evaluate if Poetry dependency constraints for application follow Tatari's standards
-  additional_dependencies: [toml]
-  entry: poetry-app-constraints
-  language: python
-  pass_filenames: false
-  files: ^(.*/)?pyproject.toml$
-- id: poetry-pkg-constraints
-  name: poetry-pkg-constraints
-  description: Evaluate if Poetry dependency constraints for packages follow Tatari's standards
-  additional_dependencies: [toml]
-  entry: poetry-pkg-constraints
-  language: python
-  pass_filenames: false
-  files: ^(.*/)?pyproject.toml$
 - id: gitleaks
   name: gitleaks
   description: Download and run gitleaks binary
@@ -32,15 +16,9 @@
   entry: disallowed-identifiers
   language: python
   types: [python]
-- id: dockerfile-poetry
-  name: dockerfile-poetry
-  description: Check if Dockerfile specifies a poetry version on install
-  entry: dockerfile-poetry
-  language: python
-  files: .*Dockerfile.*
 - id: deptry
   name: deptry
-  entry: poetry run deptry .
+  entry: uv run deptry .
   language: system
   pass_filenames: false
 - id: do-not-support-generated-columns
@@ -77,6 +55,28 @@
 - id: no-hardcoded-buckets
   name: no-hardcoded-buckets
   description: Check for hardcoded Tatari S3 bucket names
-  entry: python -m python_hooks.no_hardcoded_buckets
+  entry: no-hardcoded-buckets
   language: python
   types: [python]
+- id: app-constraints
+  name: app-constraints
+  description: Evaluate if uv (PEP 621) dependency constraints for applications follow Tatari's standards
+  additional_dependencies: [toml]
+  entry: app-constraints
+  language: python
+  pass_filenames: false
+  files: ^pyproject\.toml$
+- id: pkg-constraints
+  name: pkg-constraints
+  description: Evaluate if uv (PEP 621) dependency constraints for packages follow Tatari's standards
+  additional_dependencies: [toml]
+  entry: pkg-constraints
+  language: python
+  pass_filenames: false
+  files: ^pyproject\.toml$
+- id: dockerfile
+  name: dockerfile
+  description: Check if Dockerfile pins a uv version on install
+  entry: dockerfile
+  language: python
+  files: (^|/)Dockerfile([.-][^/]*)?$
