@@ -8,7 +8,7 @@ from python_hooks.no_non_spark_buckets_in_spark_projects import main
 
 
 def test_is_spark_project():
-    """Test detection of Spark projects via pyproject.toml."""
+    """Test detection of Spark projects via pyproject.toml (uv / PEP 621)."""
     # Create a temporary directory with pyproject.toml
     with tempfile.TemporaryDirectory() as tmpdir:
         tmppath = Path(tmpdir)
@@ -17,12 +17,10 @@ def test_is_spark_project():
         pyproject = tmppath / "pyproject.toml"
         pyproject.write_text(
             """
-[tool.poetry]
+[project]
 name = "test-project"
-
-[tool.poetry.dependencies]
-python = "^3.9"
-python-tatari-pyspark = "^5.0.0"
+requires-python = ">=3.9"
+dependencies = ["python-tatari-pyspark>=5.0.0"]
 """
         )
         assert is_spark_project(pyproject) is True
@@ -30,12 +28,10 @@ python-tatari-pyspark = "^5.0.0"
         # Test with ml-utils dependency
         pyproject.write_text(
             """
-[tool.poetry]
+[project]
 name = "test-project"
-
-[tool.poetry.dependencies]
-python = "^3.9"
-python-tatari-ml-utils = "^2.0.0"
+requires-python = ">=3.9"
+dependencies = ["python-tatari-ml-utils>=2.0.0"]
 """
         )
         assert is_spark_project(pyproject) is True
@@ -43,12 +39,10 @@ python-tatari-ml-utils = "^2.0.0"
         # Test with direct pyspark dependency
         pyproject.write_text(
             """
-[tool.poetry]
+[project]
 name = "test-project"
-
-[tool.poetry.dependencies]
-python = "^3.9"
-pyspark = "3.5.0"
+requires-python = ">=3.9"
+dependencies = ["pyspark==3.5.0"]
 """
         )
         assert is_spark_project(pyproject) is True
@@ -56,12 +50,10 @@ pyspark = "3.5.0"
         # Test without Spark dependencies
         pyproject.write_text(
             """
-[tool.poetry]
+[project]
 name = "test-project"
-
-[tool.poetry.dependencies]
-python = "^3.9"
-requests = "^2.0.0"
+requires-python = ">=3.9"
+dependencies = ["requests>=2.0.0"]
 """
         )
         assert is_spark_project(pyproject) is False
@@ -76,8 +68,8 @@ def test_check_file_with_violations():
         pyproject = tmppath / "pyproject.toml"
         pyproject.write_text(
             """
-[tool.poetry.dependencies]
-python-tatari-pyspark = "^5.0.0"
+[project]
+dependencies = ["python-tatari-pyspark>=5.0.0"]
 """
         )
 
@@ -105,8 +97,8 @@ def test_check_file_with_noqa():
         pyproject = tmppath / "pyproject.toml"
         pyproject.write_text(
             """
-[tool.poetry.dependencies]
-python-tatari-pyspark = "^5.0.0"
+[project]
+dependencies = ["python-tatari-pyspark>=5.0.0"]
 """
         )
 
@@ -133,8 +125,8 @@ def test_check_file_with_spark_import():
         pyproject = tmppath / "pyproject.toml"
         pyproject.write_text(
             """
-[tool.poetry.dependencies]
-python-tatari-pyspark = "^5.0.0"
+[project]
+dependencies = ["python-tatari-pyspark>=5.0.0"]
 """
         )
 
@@ -161,9 +153,8 @@ def test_check_file_non_spark_project():
         pyproject = tmppath / "pyproject.toml"
         pyproject.write_text(
             """
-[tool.poetry.dependencies]
-python = "^3.9"
-requests = "^2.0.0"
+[project]
+dependencies = ["requests>=2.0.0"]
 """
         )
 
@@ -190,8 +181,8 @@ def test_main_with_violations():
         pyproject = tmppath / "pyproject.toml"
         pyproject.write_text(
             """
-[tool.poetry.dependencies]
-python-tatari-pyspark = "^5.0.0"
+[project]
+dependencies = ["python-tatari-pyspark>=5.0.0"]
 """
         )
 
@@ -216,8 +207,8 @@ def test_main_without_violations():
         pyproject = tmppath / "pyproject.toml"
         pyproject.write_text(
             """
-[tool.poetry.dependencies]
-python-tatari-pyspark = "^5.0.0"
+[project]
+dependencies = ["python-tatari-pyspark>=5.0.0"]
 """
         )
 
@@ -242,13 +233,10 @@ def test_real_world_ml_impression_level_performance():
         pyproject = tmppath / "pyproject.toml"
         pyproject.write_text(
             """
-[tool.poetry]
+[project]
 name = "impression-level-performance"
-
-[tool.poetry.dependencies]
-python = "~3.11"
-pyspark = "3.5.0"
-tatari-pyspark = "^5.0.0"
+requires-python = "~=3.11"
+dependencies = ["pyspark==3.5.0", "tatari-pyspark>=5.0.0"]
 """
         )
 
@@ -280,8 +268,8 @@ def test_multiple_violations_in_file():
         pyproject = tmppath / "pyproject.toml"
         pyproject.write_text(
             """
-[tool.poetry.dependencies]
-pyspark = "3.5.0"
+[project]
+dependencies = ["pyspark==3.5.0"]
 """
         )
 
