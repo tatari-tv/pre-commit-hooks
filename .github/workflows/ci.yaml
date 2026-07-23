@@ -21,11 +21,12 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
+      - name: Setup Python ${{env.PYTHON_VERSION}}
+        uses: actions/setup-python@v6
         with:
-          version: ${{env.UV_VERSION}}
           python-version: ${{env.PYTHON_VERSION}}
+      - name: Install uv
+        run: pip install uv==${{env.UV_VERSION}}
       - run: make unit-test
 
   lint:
@@ -34,11 +35,12 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
+      - name: Setup Python ${{env.PYTHON_VERSION}}
+        uses: actions/setup-python@v6
         with:
-          version: ${{env.UV_VERSION}}
           python-version: ${{env.PYTHON_VERSION}}
+      - name: Install uv
+        run: pip install uv==${{env.UV_VERSION}}
       - name: cache pre-commit
         uses: actions/cache@v5
         with:
@@ -52,9 +54,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
+      - name: Setup Python ${{env.PYTHON_VERSION}}
+        uses: actions/setup-python@v6
         with:
-          version: ${{env.UV_VERSION}}
           python-version: ${{env.PYTHON_VERSION}}
+      - name: Install uv
+        run: pip install uv==${{env.UV_VERSION}}
       - run: make type-check
