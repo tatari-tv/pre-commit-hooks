@@ -107,10 +107,11 @@ def test_detached_head_without_a_github_actions_ref_is_skipped(repo, monkeypatch
 
 
 def test_an_empty_github_actions_ref_is_treated_as_unset(repo, monkeypatch):
+    git(repo, 'checkout', '--detach', 'HEAD')
     monkeypatch.setenv('GITHUB_REF_NAME', '')
     monkeypatch.chdir(repo)
 
-    assert resolve_branch_name() == 'main'
+    assert resolve_branch_name() is None
     assert main() == 0
 
 
