@@ -36,7 +36,15 @@ def _branch_name_from_git() -> str | None:
 
 
 def _branch_name_from_env() -> str | None:
-    """Return the branch name Github Actions advertises, or None when it isn't usable."""
+    """Return GITHUB_REF_NAME, or None when it isn't usable.
+
+    GITHUB_REF_NAME is the branch name on a `push` event. On a `pull_request` event it is
+    instead the synthetic `<pr_number>/merge` ref -- the source branch name lives in
+    GITHUB_HEAD_REF, which this function does not read. A `pull_request`-triggered run
+    therefore does not currently validate the real branch name: it validates the merge
+    ref, which happens to satisfy this hook's own branch-name pattern and so passes
+    silently.
+    """
     # Github Actions checks out a detached HEAD, so git cannot name the branch there.
     # Treat an empty value the same as an unset one: an empty string is not a branch name.
     return os.environ.get('GITHUB_REF_NAME', '').strip() or None
