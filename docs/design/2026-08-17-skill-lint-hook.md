@@ -76,15 +76,21 @@ conductor (all house rules on, one hook per check via `--only`):
         - --baseline=scripts/skill_lint_baseline.json
 ```
 
-tatari-skills (platform defaults are already its rule set):
+tatari-skills (platform defaults are already its rule set, but a default run is not green as of 2026-08-17: three skills exceed the 500-line body budget - `dbr-migrate` at 1096 lines, `dp-foundations` at 518, `tech-spec-review` at 506 - so adoption needs a baseline):
 
 ```yaml
 - repo: https://github.com/tatari-tv/pre-commit-hooks
   rev: vX.Y.Z
   hooks:
     - id: skill-lint
-      files: ^plugins/
+      files: ^(plugins/|skill_lint_baseline\.json)
+      args:
+        - --baseline=skill_lint_baseline.json
 ```
+
+Generate the baseline once at adoption with `skill-lint --baseline skill_lint_baseline.json --write-baseline`, review it, and commit it.
+The ratchet then blocks new debt while the three oversized bodies get trimmed.
+Passing `--max-body-lines=0` instead would disable the body check entirely; that is a deliberate opt-out, not the recommended path.
 
 The hook's default `files` pattern only fires when a `SKILL.md` changes.
 Consumers should widen it to their skills tree (as above) so deleting a spec or editing the baseline also retriggers the scan.

@@ -39,7 +39,6 @@ path that does not exist is an error, so a typo cannot silently mean zero tolera
 Each check can run as its own hook via --only, so a failing commit names the specific
 rule; running with no flag runs every check.
 """
-
 import argparse
 import json
 import os
