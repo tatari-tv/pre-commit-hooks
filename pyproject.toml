@@ -24,6 +24,7 @@ no-hardcoded-buckets = "python_hooks.no_hardcoded_buckets:main"
 app-constraints = "python_hooks.app_constraints:main"
 pkg-constraints = "python_hooks.pkg_constraints:main"
 dockerfile = "python_hooks.dockerfile:main"
+skill-lint = "python_hooks.skill_lint:main"
 
 [dependency-groups]
 dev = [

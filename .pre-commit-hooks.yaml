@@ -80,3 +80,10 @@
   entry: dockerfile
   language: python
   files: (^|/)Dockerfile([.-][^/]*)?$
+- id: skill-lint
+  name: skill-lint
+  description: Lint Claude Code SKILL.md skills for frontmatter keys, listing budget, and body size
+  entry: skill-lint
+  language: python
+  files: (^|/)SKILL\.md$
+  pass_filenames: false
