@@ -3,7 +3,7 @@
 Shared implementation of the skill-lint hook, reconciling the rule sets that
 previously lived in tatari-tv/conductor (scripts/skill_lint.py) and
 tatari-tv/tatari-skills (bin/skillzy validate). See the design doc "skill-lint Hook"
-in the thoughts repo (tech-plans/2026-08-17-skill-lint-hook.md) for the reconciliation
+in the tatari-tv/thoughts repo (tatari-skills/tech-plans/2026-08-17-skill-lint-hook.md) for the reconciliation
 rationale. The defaults follow published Anthropic limits;
 every stricter house rule is opt-in through a hook arg, never a module constant:
 
