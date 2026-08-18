@@ -111,7 +111,7 @@ class Rules:
 
 def split_frontmatter(content: str) -> str | None:
     """Return the raw YAML frontmatter text, or None if the file has none."""
-    m = re.match(r'^---\n(.*?\n)---\n', content, re.DOTALL)
+    m = re.match(r'^---\n(.*?\n)---(?:\n|$)', content, re.DOTALL)
     return m.group(1) if m else None
 
 
@@ -232,8 +232,8 @@ def scan_skill_dir(skill_dir: str, rules: Rules) -> tuple[dict[str, Violation], 
         }
         return violations, 0
 
-    with open(skill_md) as f:
-        content = f.read()
+    with open(skill_md, encoding='utf-8') as f:
+        content = f.read().replace('\r\n', '\n').replace('\r', '\n')
 
     line_count = len(content.splitlines())
     if rules.max_body_lines and line_count > rules.max_body_lines:
@@ -355,7 +355,7 @@ def lint(
 
 
 def load_baseline(path: str) -> Baseline:
-    with open(path) as f:
+    with open(path, encoding='utf-8') as f:
         baseline: Baseline = json.load(f)
     return baseline
 
@@ -370,7 +370,7 @@ def write_baseline(skill_dirs: Sequence[str], rules: Rules, path: str) -> int:
                 vtype: {'magnitude': info['magnitude'], 'reason': 'pre-existing when the baseline was created'}
                 for vtype, info in violations.items()
             }
-    with open(path, 'w') as f:
+    with open(path, 'w', encoding='utf-8') as f:
         json.dump(baseline, f, indent=2, sort_keys=True)
         f.write('\n')
     print(f'skill-lint: wrote baseline for {len(baseline)} skill(s) to {path}')

@@ -111,6 +111,19 @@ class TestFrontmatterChecks:
         write_skill(skills_repo / 'skills', 'clean', extra_frontmatter='classification: capability\n')
         assert main(['--required-key', 'description', '--required-key', 'classification']) == 0
 
+    def test_crlf_line_endings_still_parse(self, skills_repo):
+        skill_dir = skills_repo / 'skills' / 'crlf'
+        skill_dir.mkdir()
+        content = '---\r\nname: crlf\r\ndescription: A short description.\r\n---\r\n\r\nbody\r\n'
+        (skill_dir / 'SKILL.md').write_bytes(content.encode('utf-8'))
+        assert main([]) == 0
+
+    def test_frontmatter_with_no_trailing_newline_still_parses(self, skills_repo):
+        skill_dir = skills_repo / 'skills' / 'noeof'
+        skill_dir.mkdir()
+        (skill_dir / 'SKILL.md').write_text('---\nname: noeof\ndescription: A short description.\n---')
+        assert main([]) == 0
+
     def test_key_values_arg_takes_effect(self, skills_repo, capsys):
         write_skill(skills_repo / 'skills', 'classified', extra_frontmatter='classification: banana\n')
         args = ['--allowed-key', 'classification', '--key-values', 'classification=capability,preference,mixed']
