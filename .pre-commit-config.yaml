@@ -22,8 +22,9 @@ repos:
           - -d
           - "{ rules: { line-length: { max: 140 } } }"
         exclude: "helm/templates"
-  - repo: https://github.com/pre-commit/mirrors-autopep8
-    rev: v2.0.2
+  # autopep8 moved off the (archived) pre-commit mirror; older revs crash on Python >= 3.13
+  - repo: https://github.com/hhatto/autopep8
+    rev: v2.3.2
     hooks:
       - id: autopep8
   - repo: https://github.com/asottile/reorder_python_imports
@@ -32,7 +33,7 @@ repos:
       - id: reorder-python-imports
         args: [--py310-plus]
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.3.1
+    rev: v3.20.0
     hooks:
       - id: pyupgrade
         args: [--py310-plus]
@@ -41,7 +42,7 @@ repos:
     hooks:
       - id: black
   - repo: https://github.com/pycqa/flake8
-    rev: 6.0.0
+    rev: 7.3.0
     hooks:
       - id: flake8
   - repo: https://github.com/python-jsonschema/check-jsonschema
