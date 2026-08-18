@@ -32,8 +32,11 @@ A scan that finds zero skills fails: a broken root must never look like a clean 
 
 Baseline: pre-existing violations can be absorbed by a JSON file passed via --baseline.
 Each entry records the violation's magnitude at baseline time and every run re-checks it
-two ways: the violation must still be real (else the entry is stale - remove it), and it
-must not have grown (else the debt grew - fix it or deliberately update the magnitude).
+two ways, for each check that ran this invocation: the violation must still be real (else
+the entry is stale - remove it), and it must not have grown (else the debt grew - fix it
+or deliberately update the magnitude). An entry for a check this run didn't run (e.g.
+--require-spec omitted, or a size check disabled via 0) is left alone either way: "not
+violated" can't be told from "not checked".
 No --baseline means an empty baseline: nothing is absorbed and every violation fails,
 which is the right default for a repo with no debt. To adopt the hook in a repo with
 existing debt, run once with --baseline PATH --write-baseline to capture it. A --baseline
@@ -118,6 +121,28 @@ class Rules:
     def all_allowed_keys(self) -> frozenset[str]:
         return self.allowed_keys | frozenset(self.required_keys)
 
+    def active_checks(self) -> frozenset[str]:
+        """Checks this rule set actually evaluates, mirroring scan_skill_dir's own gates.
+
+        A stale baseline entry (baselined vtype not found in this run's violations) is only
+        trustworthy when the check that would confirm or refute it ran: if its gating flag
+        was left off (or passed as its disabling value), "not violated this run" means "not
+        checked", not "fixed", and must not be reported (or acted on) as stale. Gating is
+        per-vtype, not per-key: an --key-values entry the baseline recorded for a key that
+        simply isn't passed this run is covered here; one recorded for a key that IS passed
+        but with a different allowed set is a narrower gap this does not cover.
+        """
+        active = {'missing_frontmatter', 'unexpected_frontmatter'}
+        if self.max_body_lines:
+            active.add('oversized_body')
+        if self.max_description_chars:
+            active.add('oversized_description')
+        if self.key_values:
+            active.add('invalid_value')
+        if self.require_spec:
+            active.add('missing_spec')
+        return frozenset(active)
+
 
 def split_frontmatter(content: str) -> str | None:
     """Return the raw YAML frontmatter text, or None if the file has none."""
@@ -128,11 +153,12 @@ def split_frontmatter(content: str) -> str | None:
 def parse_frontmatter_keys(fm_text: str) -> dict[str, str]:
     """Minimal frontmatter reader: {key: value} for top-level scalar and block-scalar keys.
 
-    Handles plain scalars (quoted or not) and '|'/'>' block scalars - the shapes SKILL.md
-    files actually use. Not a general YAML parser; stdlib only so the hook needs no deps.
-    A mapping- or sequence-valued key (e.g. `hooks:`) reads as an empty string, its indented
-    children never match a top-level key: don't pass such a key to --required-key or
-    --key-values, both check the value this function returns.
+    Handles plain scalars (quoted or not, including ones that wrap onto further-indented
+    continuation lines) and '|'/'>' block scalars - the shapes SKILL.md files actually use.
+    Not a general YAML parser; stdlib only so the hook needs no deps. A mapping- or
+    sequence-valued key (e.g. `hooks:`) reads as an empty string, its indented children
+    never match a top-level key: don't pass such a key to --required-key or --key-values,
+    both check the value this function returns.
     """
     lines = fm_text.split('\n')
     keys: dict[str, str] = {}
@@ -182,8 +208,21 @@ def parse_frontmatter_keys(fm_text: str) -> dict[str, str]:
             val = rest
             if len(val) >= 2 and val[0] == val[-1] and val[0] in ('"', "'"):
                 val = val[1:-1]
+                i += 1
+            elif val:
+                # Plain (unquoted) scalars may wrap onto further-indented lines - valid
+                # YAML - and fold like '>' block scalars: each continuation line joins
+                # with a single space. An empty rest (mapping/sequence key) skips this
+                # branch so indented children stay unfolded, per the module docstring.
+                i += 1
+                parts = [val]
+                while i < n and lines[i].strip() != '' and lines[i][:1].isspace() and not key_re.match(lines[i]):
+                    parts.append(lines[i].strip())
+                    i += 1
+                val = ' '.join(parts)
+            else:
+                i += 1
             keys[key] = val
-            i += 1
     return keys
 
 
@@ -335,6 +374,7 @@ def lint(
     failures = []
     total_listing_chars = 0
     seen = set()
+    active = rules.active_checks()
 
     for skill_dir in skill_dirs:
         key = skill_dir.replace(os.sep, '/')
@@ -360,6 +400,8 @@ def lint(
         for vtype in allowed:
             if only is not None and vtype != only:
                 continue
+            if vtype not in active:
+                continue  # this run didn't check it - "not violated" can't be told from "not checked"
             if vtype not in violations:
                 failures.append(f'{key}: baseline entry "{vtype}" is stale (no longer violated) - remove it from {baseline_name}')
 

@@ -43,6 +43,15 @@ class TestFrontmatterParsing:
         keys = parse_frontmatter_keys('description: |\n  line one\n  line two\n')
         assert keys['description'] == 'line one\nline two'
 
+    def test_wrapped_plain_scalar_folds_with_spaces(self):
+        keys = parse_frontmatter_keys('description: This is a long\n  description that wraps.\n')
+        assert keys['description'] == 'This is a long description that wraps.'
+
+    def test_mapping_valued_key_stays_empty_and_children_are_not_folded_in(self):
+        keys = parse_frontmatter_keys('hooks:\n  foo: bar\nname: x\n')
+        assert keys['hooks'] == ''
+        assert keys['name'] == 'x'
+
 
 class TestDiscovery:
     def test_bare_skills_layout(self, skills_repo):
@@ -198,9 +207,15 @@ class TestSpecCheck:
         write_skill(skills_repo / 'skills', 'clean', with_spec=True)
         assert main(['--require-spec']) == 0
 
-    def test_only_restricts_to_one_check(self, skills_repo):
+    def test_only_restricts_to_one_check(self, skills_repo, capsys):
         write_skill(skills_repo / 'skills', 'nodesc', description='')
+        # nodesc violates both missing_frontmatter and (with --require-spec) missing_spec;
+        # assert on which check actually fired, not just the exit code, so this proves
+        # --only excluded missing_spec rather than missing_spec happening to also be non-zero.
         assert main(['--require-spec', '--only', 'missing_frontmatter']) == 1
+        out = capsys.readouterr().out
+        assert 'missing_frontmatter' in out
+        assert 'missing_spec' not in out
         assert main(['--only', 'oversized_body']) == 0
 
 
@@ -300,6 +315,15 @@ class TestBaseline:
         write_skill(skills_repo / 'skills', 'clean', extra_frontmatter='classification: bogus2\n')
         assert main(args) == 1  # drifted to a different bad value under the same key: not absorbed
         assert 'grew past its baselined magnitude' in capsys.readouterr().out
+
+    def test_stale_check_skips_entries_whose_rule_is_not_active_this_run(self, skills_repo, capsys):
+        # missing_spec is baselined, but this run omits --require-spec, so the check never
+        # ran. "not violated this run" here means "not checked", not "fixed" - the entry
+        # must not be reported stale (which would invite deleting real, still-present debt).
+        baseline = {'skills/clean': {'missing_spec': {'magnitude': None, 'reason': 'pre-existing'}}}
+        (skills_repo / 'baseline.json').write_text(json.dumps(baseline))
+        assert main(['--baseline', 'baseline.json']) == 0
+        assert 'stale' not in capsys.readouterr().out
 
     def test_missing_skill_md_is_not_absorbed_by_an_empty_field_baseline(self, skills_repo, capsys):
         # An empty required field and a deleted SKILL.md both produce missing_frontmatter for
