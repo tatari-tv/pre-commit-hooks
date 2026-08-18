@@ -11,6 +11,8 @@ every stricter house rule is opt-in through a hook arg, never a module constant:
   `description`. Measured over description + when_to_use combined, because the platform
   concatenates both fields into the skill's one listing entry paid on every session;
   in a repo that does not use when_to_use this equals measuring description alone.
+  when_to_use is not itself one of the platform-documented frontmatter keys below, so a
+  skill that sets it also needs --allowed-key when_to_use or it fails unexpected_frontmatter.
 - --max-body-lines (default 500): Anthropic's published authoring best practice
   ("keep SKILL.md under 500 lines"). 0 disables the check.
 - --required-key (default: description): the platform's only required frontmatter key
@@ -84,8 +86,16 @@ CHECKS = (
     'invalid_value',
     'missing_spec',
 )
-# Checks whose magnitude is a list of key names; the ratchet compares them as sets.
+# Checks whose magnitude is a list the ratchet compares as a set (growth = a new member
+# appearing, not just a longer list). missing_frontmatter and unexpected_frontmatter use bare
+# key names; invalid_value uses "key=value" pairs so a drift to a different bad value under
+# an already-baselined key still counts as growth, not just the key's continued presence.
 SET_MAGNITUDE_CHECKS = frozenset(('missing_frontmatter', 'unexpected_frontmatter', 'invalid_value'))
+# Sentinel appended to missing_frontmatter's magnitude when SKILL.md itself is absent, so that
+# state is a strict superset of (and never conflated with) "file present, required key(s) empty"
+# for the same key names - `<` and `>` can't appear in a parsed frontmatter key, so this can
+# never collide with a real key name.
+SKILL_MD_MISSING = '<file-missing>'
 
 Magnitude = int | list[str] | None
 Baseline = dict[str, dict[str, dict[str, Any]]]
@@ -120,6 +130,9 @@ def parse_frontmatter_keys(fm_text: str) -> dict[str, str]:
 
     Handles plain scalars (quoted or not) and '|'/'>' block scalars - the shapes SKILL.md
     files actually use. Not a general YAML parser; stdlib only so the hook needs no deps.
+    A mapping- or sequence-valued key (e.g. `hooks:`) reads as an empty string, its indented
+    children never match a top-level key: don't pass such a key to --required-key or
+    --key-values, both check the value this function returns.
     """
     lines = fm_text.split('\n')
     keys: dict[str, str] = {}
@@ -204,6 +217,7 @@ def filter_gitignored(skill_dirs: list[str]) -> list[str]:
         print('skill-lint: git not found; skipping .gitignore filtering', file=sys.stderr)
         return skill_dirs
     if result.returncode not in (0, 1):  # 0: some ignored, 1: none ignored, else: not a repo / error
+        print(f'skill-lint: git check-ignore exited {result.returncode}; skipping .gitignore filtering', file=sys.stderr)
         return skill_dirs
     ignored = {line.rstrip('/') for line in result.stdout.splitlines()}
     return [d for d in skill_dirs if d.rstrip('/') not in ignored]
@@ -228,7 +242,7 @@ def scan_skill_dir(skill_dir: str, rules: Rules) -> tuple[dict[str, Violation], 
     if not os.path.isfile(skill_md):
         violations['missing_frontmatter'] = {
             'detail': 'no SKILL.md found',
-            'magnitude': sorted(rules.required_keys),
+            'magnitude': sorted((*rules.required_keys, SKILL_MD_MISSING)),
         }
         return violations, 0
 
@@ -263,14 +277,19 @@ def scan_skill_dir(skill_dir: str, rules: Rules) -> tuple[dict[str, Violation], 
         }
 
     bad_values = {}
+    bad_pairs = []
     for key, allowed_values in rules.key_values:
         value = keys.get(key, '').strip()
         if value and value not in allowed_values:
             bad_values[key] = f'{key}: {value!r} (allowed: {", ".join(sorted(allowed_values))})'
+            bad_pairs.append(f'{key}={value}')
     if bad_values:
         violations['invalid_value'] = {
             'detail': '; '.join(bad_values[k] for k in sorted(bad_values)),
-            'magnitude': sorted(bad_values),
+            # key=value, not just key, so a drift to a different bad value under the same
+            # key is a new set member and trips magnitude_grew rather than being absorbed
+            # by a baseline entry that only ever saw the old value.
+            'magnitude': sorted(bad_pairs),
         }
 
     desc_len = len(keys.get('description', ''))
@@ -355,9 +374,17 @@ def lint(
 
 
 def load_baseline(path: str) -> Baseline:
+    """Parse and shape-check the baseline file, raising ValueError to fail closed on either problem."""
     with open(path, encoding='utf-8') as f:
-        baseline: Baseline = json.load(f)
-    return baseline
+        try:
+            data = json.load(f)
+        except json.JSONDecodeError as e:
+            raise ValueError(f'{path} is not valid JSON: {e}') from e
+    if not isinstance(data, dict) or not all(
+        isinstance(entries, dict) and all(isinstance(entry, dict) for entry in entries.values()) for entries in data.values()
+    ):
+        raise ValueError(f'{path} must be a JSON object mapping skill dir to a violation-type -> entry mapping')
+    return data
 
 
 def write_baseline(skill_dirs: Sequence[str], rules: Rules, path: str) -> int:
@@ -462,7 +489,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             # Fail closed: a typo'd baseline path must be an error, not silent zero tolerance.
             print(f'skill-lint: baseline file not found: {args.baseline} (create it with --write-baseline, or fix the path)')
             return 1
-        baseline = load_baseline(args.baseline)
+        try:
+            baseline = load_baseline(args.baseline)
+        except ValueError as e:
+            # Fail closed: a malformed baseline must be an error, not a crash or silent zero tolerance.
+            print(f'skill-lint: {e} (recreate it with --write-baseline, or fix it by hand)')
+            return 1
 
     roots = args.skills_roots if args.skills_roots else list(DEFAULT_SKILLS_ROOTS)
     skill_dirs = filter_gitignored(discover_skill_dirs(roots))

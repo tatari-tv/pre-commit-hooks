@@ -4,6 +4,7 @@ import subprocess
 import pytest
 
 from python_hooks.skill_lint import DEFAULT_MAX_DESCRIPTION_CHARS
+from python_hooks.skill_lint import filter_gitignored
 from python_hooks.skill_lint import main
 from python_hooks.skill_lint import parse_frontmatter_keys
 
@@ -80,6 +81,14 @@ class TestDiscovery:
         assert main([]) == 0
         assert '1 skills' in capsys.readouterr().out
 
+    def test_unexpected_check_ignore_returncode_keeps_everything_and_warns(self, monkeypatch, capsys):
+        def fake_run(*args, **kwargs):
+            return subprocess.CompletedProcess(args, returncode=128, stdout='', stderr='fatal: not a git repository')
+
+        monkeypatch.setattr(subprocess, 'run', fake_run)
+        assert filter_gitignored(['skills/a', 'skills/b']) == ['skills/a', 'skills/b']
+        assert 'git check-ignore exited 128' in capsys.readouterr().err
+
 
 class TestFrontmatterChecks:
     def test_missing_skill_md_fails(self, skills_repo, capsys):
@@ -96,6 +105,16 @@ class TestFrontmatterChecks:
         assert main([]) == 0  # allowed-tools is not required by default
         assert main(['--required-key', 'description', '--required-key', 'allowed-tools']) == 1
         assert 'missing key(s): allowed-tools' in capsys.readouterr().out
+
+    def test_required_key_arg_replaces_the_default_rather_than_extending_it(self, skills_repo):
+        # --required-key is documented to replace DEFAULT_REQUIRED_KEYS, not extend it: a
+        # single `--required-key allowed-tools` (without re-passing description) must stop
+        # enforcing description, even though a skill with an empty description would
+        # otherwise always fail the default check.
+        write_skill(skills_repo / 'skills', 'clean', description='')
+        assert main(['--required-key', 'allowed-tools']) == 1  # allowed-tools missing
+        write_skill(skills_repo / 'skills', 'clean', description='', extra_frontmatter='allowed-tools: Read\n')
+        assert main(['--required-key', 'allowed-tools']) == 0  # description empty, but no longer required
 
     def test_platform_key_allowed_by_default(self, skills_repo):
         write_skill(skills_repo / 'skills', 'modeled', extra_frontmatter='model: haiku\n')
@@ -248,3 +267,47 @@ class TestBaseline:
         with pytest.raises(SystemExit) as excinfo:
             main(['--baseline', 'baseline.json', '--write-baseline', '--only', 'oversized_body'])
         assert excinfo.value.code == 2
+
+    def test_malformed_json_baseline_fails_closed(self, skills_repo, capsys):
+        (skills_repo / 'baseline.json').write_text('{not json')
+        assert main(['--baseline', 'baseline.json']) == 1
+        assert 'not valid JSON' in capsys.readouterr().out
+
+    def test_wrong_shape_baseline_fails_closed(self, skills_repo, capsys):
+        (skills_repo / 'baseline.json').write_text(json.dumps(['not', 'a', 'mapping']))
+        assert main(['--baseline', 'baseline.json']) == 1
+        assert 'must be a JSON object mapping' in capsys.readouterr().out
+
+    def test_baseline_entry_wrong_shape_fails_closed(self, skills_repo, capsys):
+        baseline = {'skills/clean': {'oversized_description': 'not-a-dict'}}
+        (skills_repo / 'baseline.json').write_text(json.dumps(baseline))
+        assert main(['--baseline', 'baseline.json']) == 1
+        assert 'must be a JSON object mapping' in capsys.readouterr().out
+
+    def test_invalid_value_drift_to_a_different_bad_value_counts_as_growth(self, skills_repo, capsys):
+        write_skill(skills_repo / 'skills', 'clean', extra_frontmatter='classification: bogus1\n')
+        baseline = {'skills/clean': {'invalid_value': {'magnitude': ['classification=bogus1'], 'reason': 'pre-existing'}}}
+        (skills_repo / 'baseline.json').write_text(json.dumps(baseline))
+        args = [
+            '--baseline',
+            'baseline.json',
+            '--allowed-key',
+            'classification',
+            '--key-values',
+            'classification=capability,preference,mixed',
+        ]
+        assert main(args) == 0  # same bad value as baselined: absorbed
+        write_skill(skills_repo / 'skills', 'clean', extra_frontmatter='classification: bogus2\n')
+        assert main(args) == 1  # drifted to a different bad value under the same key: not absorbed
+        assert 'grew past its baselined magnitude' in capsys.readouterr().out
+
+    def test_missing_skill_md_is_not_absorbed_by_an_empty_field_baseline(self, skills_repo, capsys):
+        # An empty required field and a deleted SKILL.md both produce missing_frontmatter for
+        # the same key name, but the file's outright absence must still register as growth.
+        write_skill(skills_repo / 'skills', 'clean', description='')
+        baseline = {'skills/clean': {'missing_frontmatter': {'magnitude': ['description'], 'reason': 'pre-existing'}}}
+        (skills_repo / 'baseline.json').write_text(json.dumps(baseline))
+        assert main(['--baseline', 'baseline.json']) == 0  # empty field: absorbed
+        (skills_repo / 'skills' / 'clean' / 'SKILL.md').unlink()
+        assert main(['--baseline', 'baseline.json']) == 1  # file gone entirely: not absorbed
+        assert 'grew past its baselined magnitude' in capsys.readouterr().out
