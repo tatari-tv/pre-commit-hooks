@@ -65,8 +65,6 @@ def check_anchors(root: Path, files: list, errors: list) -> None:
             continue
         prose, links = _mask_code(text)
         slugs = _slug_set(prose)
-        if not slugs:
-            continue
         for match in _ANCHOR_LINK.finditer(links):
             anchor = match.group(1)
             if anchor in slugs:

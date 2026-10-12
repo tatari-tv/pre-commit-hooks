@@ -44,13 +44,6 @@ def test_invalid_json_is_flagged(tmp_path):
     assert 'invalid JSON' in errors[0]
 
 
-def test_skill_without_skill_md_is_flagged(tmp_path):
-    base = _plugin(tmp_path, 'alpha', skills=())
-    (base / 'skills' / 'empty').mkdir(parents=True)
-    errors, _ = _check(tmp_path)
-    assert 'missing SKILL.md' in errors[0]
-
-
 def test_symlinked_skill_is_flagged(tmp_path):
     base = _plugin(tmp_path, 'alpha')
     (base / 'skills' / 'link').symlink_to(base / 'skills' / 'one')
@@ -74,8 +67,7 @@ def test_missing_plugins_root_is_fine(tmp_path):
     assert _check(tmp_path / 'absent') == ([], [])
 
 
-def test_directory_named_skill_md_is_flagged(tmp_path):
+def test_skill_md_presence_is_left_to_skill_lint(tmp_path):
     base = _plugin(tmp_path, 'alpha', skills=())
-    (base / 'skills' / 'odd' / 'SKILL.md').mkdir(parents=True)
-    errors, _ = _check(tmp_path)
-    assert 'missing SKILL.md' in errors[0]
+    (base / 'skills' / 'empty').mkdir(parents=True)
+    assert _check(tmp_path) == ([], [])

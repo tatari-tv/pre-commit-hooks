@@ -41,8 +41,8 @@ def test_links_inside_fences_are_ignored(tmp_path):
     assert _run(tmp_path, text) == []
 
 
-def test_file_without_headings_is_skipped(tmp_path):
-    assert _run(tmp_path, 'no headings [x](#gone)\n') == []
+def test_file_without_headings_still_checks_links(tmp_path):
+    assert len(_run(tmp_path, 'no headings [x](#gone)\n')) == 1
 
 
 def test_non_markdown_is_skipped(tmp_path):

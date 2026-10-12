@@ -10,7 +10,7 @@ from python_hooks.claude_plugin_marketplace._common import repo_root
 from python_hooks.claude_plugin_marketplace._common import report
 
 _FENCE = re.compile(
-    r'^[ \t]*(?P<ticks>`{3,})(?P<info>[^\n]*)\n(?P<body>.*?)^[ \t]*(?P=ticks)`*[ \t]*$',
+    r'^[ \t]*(?P<ticks>(?P<ch>[`~])(?P=ch){2,})(?P<info>[^\n]*)\n(?P<body>.*?)^[ \t]*(?P=ticks)(?P=ch)*[ \t]*$',
     re.DOTALL | re.MULTILINE,
 )
 
