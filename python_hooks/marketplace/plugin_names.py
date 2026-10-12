@@ -38,7 +38,7 @@ def check_plugins(plugins_root: Path, errors: list, warnings: list) -> None:
                 errors.append(f'{where}: symlink not allowed')
             elif not entry.is_dir():
                 warnings.append(f'{where}: not a directory')
-            elif not (entry / 'SKILL.md').exists():
+            elif not (entry / 'SKILL.md').is_file():
                 errors.append(f'{where}: missing SKILL.md')
 
 

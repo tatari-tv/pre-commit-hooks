@@ -53,3 +53,28 @@ def test_pointer_entry_needs_no_directory(tmp_path):
 def test_hidden_directories_are_ignored(tmp_path):
     _repo(tmp_path, [], dirs=['.cache'])
     assert _check(tmp_path) == []
+
+
+def test_entry_without_source_is_flagged(tmp_path):
+    _repo(tmp_path, [{'name': 'alpha'}])
+    errors = _check(tmp_path)
+    assert errors == ["marketplace.json: plugin 'alpha' has no valid source"]
+
+
+def test_empty_source_is_flagged(tmp_path):
+    _repo(tmp_path, [{'name': 'alpha', 'source': '  '}])
+    assert 'no valid source' in _check(tmp_path)[0]
+
+
+def test_parent_segment_in_source_is_flagged(tmp_path):
+    _repo(tmp_path, [{'name': 'alpha', 'source': './plugins/../plugins/alpha'}], dirs=['alpha'])
+    assert 'leaves the repo' in _check(tmp_path)[0]
+
+
+def test_source_outside_repo_is_flagged(tmp_path):
+    outside = tmp_path / 'outside'
+    outside.mkdir()
+    repo = tmp_path / 'repo'
+    repo.mkdir()
+    _repo(repo, [{'name': 'alpha', 'source': str(outside)}])
+    assert 'leaves the repo' in _check(repo)[0]

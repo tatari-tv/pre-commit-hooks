@@ -72,3 +72,10 @@ def test_hidden_directories_are_ignored(tmp_path):
 
 def test_missing_plugins_root_is_fine(tmp_path):
     assert _check(tmp_path / 'absent') == ([], [])
+
+
+def test_directory_named_skill_md_is_flagged(tmp_path):
+    base = _plugin(tmp_path, 'alpha', skills=())
+    (base / 'skills' / 'odd' / 'SKILL.md').mkdir(parents=True)
+    errors, _ = _check(tmp_path)
+    assert 'missing SKILL.md' in errors[0]

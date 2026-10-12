@@ -27,8 +27,14 @@ def check_marketplace(root: Path, plugins_root: Path, errors: list) -> None:
         listed.add(name)
         if is_pointer(plugin):
             continue
-        source = plugin.get('source', '')
-        if not (root / source).is_dir():
+        source = plugin.get('source')
+        if not isinstance(source, str) or not source.strip():
+            errors.append(f"marketplace.json: plugin '{name}' has no valid source")
+            continue
+        target = (root / source).resolve()
+        if '..' in Path(source).parts or not target.is_relative_to(root.resolve()):
+            errors.append(f"marketplace.json: plugin '{name}' source '{source}' leaves the repo")
+        elif not target.is_dir():
             errors.append(f"marketplace.json: plugin '{name}' source '{source}' not found")
 
     if plugins_root.is_dir():

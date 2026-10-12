@@ -10,7 +10,7 @@ from python_hooks.marketplace._common import repo_root
 from python_hooks.marketplace._common import report
 
 _FENCE = re.compile(
-    r'^(?P<ticks>`{3,})(?P<info>[^\n]*)\n(?P<body>.*?)^(?P=ticks)`*[ \t]*$',
+    r'^[ \t]*(?P<ticks>`{3,})(?P<info>[^\n]*)\n(?P<body>.*?)^[ \t]*(?P=ticks)`*[ \t]*$',
     re.DOTALL | re.MULTILINE,
 )
 
@@ -109,7 +109,7 @@ def _prefix_pattern(skill_owner: dict):
     pairs = sorted(f'{plugin}:{skill}' for skill, plugins in skill_owner.items() for plugin in plugins)
     if not pairs:
         return None
-    return re.compile(r'\b(' + '|'.join(re.escape(p) for p in pairs) + r')\b')
+    return re.compile(r'(?<![A-Za-z0-9_-])(' + '|'.join(re.escape(p) for p in pairs) + r')(?![A-Za-z0-9_-])')
 
 
 def check_closure(plugins_root: Path, errors: list) -> None:

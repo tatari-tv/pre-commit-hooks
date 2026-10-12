@@ -109,3 +109,25 @@ def test_skill_name_in_two_plugins_is_not_blamed(tmp_path):
 
 def test_missing_plugins_root_is_fine(tmp_path):
     assert _check(tmp_path / 'absent') == []
+
+
+def test_indented_fence_in_list_is_scanned(tmp_path):
+    body = '- step\n\n  ```bash\n  run beta:two\n  ```\n'
+    _skill(tmp_path, 'alpha', 'one', {'notes.md': body})
+    _skill(tmp_path, 'beta', 'two')
+    assert len(_check(tmp_path)) == 1
+
+
+def test_longer_name_is_not_a_roster_match(tmp_path):
+    _skill(tmp_path, 'alpha', 'one', {'run.sh': 'invoke beta:two-extra now\n'})
+    _skill(tmp_path, 'beta', 'two')
+    assert _check(tmp_path) == []
+
+
+def test_rostered_longer_name_is_still_flagged(tmp_path):
+    _skill(tmp_path, 'alpha', 'one', {'run.sh': 'invoke beta:two-extra now\n'})
+    _skill(tmp_path, 'beta', 'two')
+    _skill(tmp_path, 'beta', 'two-extra')
+    errors = _check(tmp_path)
+    assert len(errors) == 1
+    assert "'beta:two-extra'" in errors[0]

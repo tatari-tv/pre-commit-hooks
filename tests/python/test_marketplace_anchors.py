@@ -51,3 +51,49 @@ def test_non_markdown_is_skipped(tmp_path):
 
 def test_cross_file_links_are_ignored(tmp_path):
     assert _run(tmp_path, '# T\n\n[x](other.md#gone)\n') == []
+
+
+def test_tilde_fence_hides_links(tmp_path):
+    assert _run(tmp_path, '# Top\n\n~~~\n[x](#gone)\n~~~\n') == []
+
+
+def test_inline_code_hides_links(tmp_path):
+    assert _run(tmp_path, '# Top\n\nWrite `[x](#gone)` as an example.\n') == []
+
+
+def test_shorter_closer_does_not_end_fence(tmp_path):
+    text = '# Top\n\n````\n```\n[x](#gone)\n````\n'
+    assert _run(tmp_path, text) == []
+
+
+def test_other_marker_does_not_end_fence(tmp_path):
+    text = '# Top\n\n```\n~~~\n[x](#gone)\n```\n'
+    assert _run(tmp_path, text) == []
+
+
+def test_link_after_fence_is_still_checked(tmp_path):
+    errors = _run(tmp_path, '# Top\n\n```\ncode\n```\n\n[x](#gone)\n')
+    assert len(errors) == 1
+    assert 'doc.md:7' in errors[0]
+
+
+def test_inline_code_in_heading_keeps_its_slug(tmp_path):
+    assert _run(tmp_path, '# `run`: it\n\n[x](#run-it)\n') == []
+
+
+def test_emphasis_markers_do_not_enter_slug(tmp_path):
+    assert anchors.slugify('_Setup_') == 'setup'
+    assert _run(tmp_path, '# _Setup_\n\n[x](#setup)\n') == []
+
+
+def test_intraword_underscore_is_kept():
+    assert anchors.slugify('snake_case name') == 'snake_case-name'
+
+
+def test_unknown_numeric_suffix_is_flagged(tmp_path):
+    assert len(_run(tmp_path, '# Notes\n\nSee [it](#notes-999).\n')) == 1
+
+
+def test_second_duplicate_heading_has_suffix_one(tmp_path):
+    assert _run(tmp_path, '# Notes\n\n# Notes\n\n[a](#notes) [b](#notes-1)\n') == []
+    assert len(_run(tmp_path, '# Notes\n\n# Notes\n\n[c](#notes-2)\n')) == 1
