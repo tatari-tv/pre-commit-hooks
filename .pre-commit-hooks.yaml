@@ -87,3 +87,38 @@
   language: python
   files: (^|/)SKILL\.md$
   pass_filenames: false
+- id: check-claude-plugin-names
+  name: check-claude-plugin-names
+  description: Check each plugin directory matches its plugin.json name
+  entry: check-claude-plugin-names
+  language: python
+  pass_filenames: false
+  always_run: true
+- id: check-claude-plugin-marketplace
+  name: check-claude-plugin-marketplace
+  description: Check marketplace.json entries match the plugins directory
+  entry: check-claude-plugin-marketplace
+  language: python
+  pass_filenames: false
+  always_run: true
+- id: no-em-dashes
+  name: no-em-dashes
+  description: Fail on em-dashes in tracked files
+  entry: no-em-dashes
+  language: python
+  pass_filenames: false
+  always_run: true
+- id: check-md-anchors
+  name: check-md-anchors
+  description: Fail on markdown anchor links with no matching heading
+  entry: check-md-anchors
+  language: python
+  pass_filenames: false
+  always_run: true
+- id: check-claude-plugin-closure
+  name: check-claude-plugin-closure
+  description: Fail on script-level references across plugins
+  entry: check-claude-plugin-closure
+  language: python
+  pass_filenames: false
+  always_run: true
