@@ -5,11 +5,11 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 HOOK_IDS = [
-    'check-plugin-names',
-    'check-marketplace-entries',
+    'check-claude-plugin-names',
+    'check-claude-plugin-marketplace',
     'no-em-dashes',
     'check-md-anchors',
-    'check-plugin-closure',
+    'check-claude-plugin-closure',
 ]
 
 

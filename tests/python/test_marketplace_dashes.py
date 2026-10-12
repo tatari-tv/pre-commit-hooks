@@ -1,7 +1,7 @@
 import subprocess
 
-from python_hooks.marketplace import dashes
-from python_hooks.marketplace._common import tracked_files
+from python_hooks.claude_plugin_marketplace import dashes
+from python_hooks.claude_plugin_marketplace._common import tracked_files
 
 DASH = chr(0x2014)
 ESCAPE = '\\' + 'u' + f'{0x2014:04x}'

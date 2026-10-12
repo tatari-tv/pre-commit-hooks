@@ -1,4 +1,4 @@
-from python_hooks.marketplace import closure
+from python_hooks.claude_plugin_marketplace import closure
 
 
 def _skill(plugins, plugin, skill, files=None):

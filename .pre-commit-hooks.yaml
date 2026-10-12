@@ -87,17 +87,17 @@
   language: python
   files: (^|/)SKILL\.md$
   pass_filenames: false
-- id: check-plugin-names
-  name: check-plugin-names
+- id: check-claude-plugin-names
+  name: check-claude-plugin-names
   description: Check each plugin directory matches its plugin.json name
-  entry: check-plugin-names
+  entry: check-claude-plugin-names
   language: python
   pass_filenames: false
   always_run: true
-- id: check-marketplace-entries
-  name: check-marketplace-entries
+- id: check-claude-plugin-marketplace
+  name: check-claude-plugin-marketplace
   description: Check marketplace.json entries match the plugins directory
-  entry: check-marketplace-entries
+  entry: check-claude-plugin-marketplace
   language: python
   pass_filenames: false
   always_run: true
@@ -115,10 +115,10 @@
   language: python
   pass_filenames: false
   always_run: true
-- id: check-plugin-closure
-  name: check-plugin-closure
+- id: check-claude-plugin-closure
+  name: check-claude-plugin-closure
   description: Fail on script-level references across plugins
-  entry: check-plugin-closure
+  entry: check-claude-plugin-closure
   language: python
   pass_filenames: false
   always_run: true

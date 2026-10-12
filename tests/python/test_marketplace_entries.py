@@ -1,6 +1,6 @@
 import json
 
-from python_hooks.marketplace import marketplace_entries as entries
+from python_hooks.claude_plugin_marketplace import marketplace_entries as entries
 
 
 def _repo(tmp_path, plugins, dirs=()):

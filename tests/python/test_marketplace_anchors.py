@@ -1,4 +1,4 @@
-from python_hooks.marketplace import anchors
+from python_hooks.claude_plugin_marketplace import anchors
 
 DASH = chr(0x2014)
 

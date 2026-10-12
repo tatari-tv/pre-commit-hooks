@@ -25,11 +25,11 @@ app-constraints = "python_hooks.app_constraints:main"
 pkg-constraints = "python_hooks.pkg_constraints:main"
 dockerfile = "python_hooks.dockerfile:main"
 skill-lint = "python_hooks.skill_lint:main"
-check-plugin-names = "python_hooks.marketplace.plugin_names:main"
-check-marketplace-entries = "python_hooks.marketplace.marketplace_entries:main"
-no-em-dashes = "python_hooks.marketplace.dashes:main"
-check-md-anchors = "python_hooks.marketplace.anchors:main"
-check-plugin-closure = "python_hooks.marketplace.closure:main"
+check-claude-plugin-names = "python_hooks.claude_plugin_marketplace.plugin_names:main"
+check-claude-plugin-marketplace = "python_hooks.claude_plugin_marketplace.marketplace_entries:main"
+no-em-dashes = "python_hooks.claude_plugin_marketplace.dashes:main"
+check-md-anchors = "python_hooks.claude_plugin_marketplace.anchors:main"
+check-claude-plugin-closure = "python_hooks.claude_plugin_marketplace.closure:main"
 
 [dependency-groups]
 dev = [

@@ -4,9 +4,9 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from python_hooks.marketplace._common import repo_root
-from python_hooks.marketplace._common import report
-from python_hooks.marketplace._common import tracked_files
+from python_hooks.claude_plugin_marketplace._common import repo_root
+from python_hooks.claude_plugin_marketplace._common import report
+from python_hooks.claude_plugin_marketplace._common import tracked_files
 
 _FENCE_OPEN = re.compile(r'^ {0,3}(`{3,}|~{3,})')
 _INLINE_CODE = re.compile(r'(?<!`)(`+)(?!`).+?(?<!`)\1(?!`)')

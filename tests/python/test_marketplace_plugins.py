@@ -1,6 +1,6 @@
 import json
 
-from python_hooks.marketplace import plugin_names
+from python_hooks.claude_plugin_marketplace import plugin_names
 
 
 def _plugin(plugins, name, manifest_name=None, skills=('one',)):

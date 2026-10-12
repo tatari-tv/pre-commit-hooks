@@ -4,9 +4,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from python_hooks.marketplace._common import PLUGINS_DIR
-from python_hooks.marketplace._common import repo_root
-from python_hooks.marketplace._common import report
+from python_hooks.claude_plugin_marketplace._common import PLUGINS_DIR
+from python_hooks.claude_plugin_marketplace._common import repo_root
+from python_hooks.claude_plugin_marketplace._common import report
 
 
 def check_plugins(plugins_root: Path, errors: list, warnings: list) -> None:

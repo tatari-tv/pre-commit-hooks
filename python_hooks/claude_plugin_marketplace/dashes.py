@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from python_hooks.marketplace._common import repo_root
-from python_hooks.marketplace._common import report
-from python_hooks.marketplace._common import tracked_files
+from python_hooks.claude_plugin_marketplace._common import repo_root
+from python_hooks.claude_plugin_marketplace._common import report
+from python_hooks.claude_plugin_marketplace._common import tracked_files
 
 # Built, not inlined, to avoid self-flagging.
 EM_DASH = chr(0x2014)
