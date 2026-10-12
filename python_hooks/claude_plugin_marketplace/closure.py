@@ -51,20 +51,23 @@ def _cross_plugin_message(other_skill: str, owners: set, this_plugin: str) -> st
     )
 
 
+def _skill_dirs(plugins_root: Path):
+    if not plugins_root.is_dir():
+        return
+    for plugin_dir in sorted(plugins_root.iterdir()):
+        skills_dir = plugin_dir / 'skills'
+        if not plugin_dir.is_dir() or plugin_dir.name.startswith('.') or not skills_dir.is_dir():
+            continue
+        for skill_dir in sorted(skills_dir.iterdir()):
+            if skill_dir.is_dir():
+                yield plugin_dir, skill_dir
+
+
 def _skill_to_plugin(plugins_root: Path) -> dict:
     # Set: one name, several plugins.
     mapping: dict = {}
-    if not plugins_root.is_dir():
-        return mapping
-    for plugin_dir in sorted(plugins_root.iterdir()):
-        if not plugin_dir.is_dir() or plugin_dir.name.startswith('.'):
-            continue
-        skills_dir = plugin_dir / 'skills'
-        if not skills_dir.is_dir():
-            continue
-        for skill_dir in skills_dir.iterdir():
-            if skill_dir.is_dir():
-                mapping.setdefault(skill_dir.name, set()).add(plugin_dir.name)
+    for plugin_dir, skill_dir in _skill_dirs(plugins_root):
+        mapping.setdefault(skill_dir.name, set()).add(plugin_dir.name)
     return mapping
 
 
@@ -120,25 +123,16 @@ def check_closure(plugins_root: Path, errors: list) -> None:
     if prefix_pattern is None:
         return
 
-    for plugin_dir in sorted(plugins_root.iterdir()):
-        if not plugin_dir.is_dir() or plugin_dir.name.startswith('.'):
-            continue
-        this_plugin = plugin_dir.name
-        skills_dir = plugin_dir / 'skills'
-        if not skills_dir.is_dir():
-            continue
-        for skill_dir in sorted(skills_dir.iterdir()):
-            if not skill_dir.is_dir():
-                continue
-            for label, text in _script_texts(skill_dir):
-                for match in _SKILL_DIR_PATH.finditer(text):
-                    problem = _sibling_path_error(match.group(1), skill_dir, plugin_dir, plugins_root, skill_owner)
-                    if problem:
-                        errors.append(f'{label}: {problem}')
-                for match in prefix_pattern.finditer(text):
-                    ref_plugin, ref_skill = match.group(1).split(':', 1)
-                    if ref_plugin != this_plugin:
-                        errors.append(f"{label}: reference to '{ref_plugin}:{ref_skill}' crosses plugins; co-locate the skills")
+    for plugin_dir, skill_dir in _skill_dirs(plugins_root):
+        for label, text in _script_texts(skill_dir):
+            for match in _SKILL_DIR_PATH.finditer(text):
+                problem = _sibling_path_error(match.group(1), skill_dir, plugin_dir, plugins_root, skill_owner)
+                if problem:
+                    errors.append(f'{label}: {problem}')
+            for match in prefix_pattern.finditer(text):
+                ref_plugin, ref_skill = match.group(1).split(':', 1)
+                if ref_plugin != plugin_dir.name:
+                    errors.append(f"{label}: reference to '{ref_plugin}:{ref_skill}' crosses plugins; co-locate the skills")
 
 
 def main() -> int:
