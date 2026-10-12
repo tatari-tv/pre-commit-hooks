@@ -365,7 +365,7 @@ def scan_skill_dir(skill_dir: str, rules: Rules) -> tuple[dict[str, Violation], 
 
     if rules.check_name:
         dir_name = os.path.basename(os.path.normpath(skill_dir))
-        name = keys.get('name', '').strip() or dir_name
+        name = keys['name'].strip() if 'name' in keys else dir_name
         problems = name_problems(name, dir_name)
         if problems:
             violations['invalid_name'] = {'detail': f'name {name!r}: {", ".join(problems)}', 'magnitude': sorted(problems)}
@@ -374,7 +374,7 @@ def scan_skill_dir(skill_dir: str, rules: Rules) -> tuple[dict[str, Violation], 
     if rules.no_angle_brackets and ('<' in description or '>' in description):
         violations['description_angle_brackets'] = {'detail': 'description contains < or >', 'magnitude': None}
 
-    compatibility_len = len(keys.get('compatibility', ''))
+    compatibility_len = len(keys.get('compatibility', '').strip())
     if rules.max_compatibility_chars and compatibility_len > rules.max_compatibility_chars:
         violations['oversized_compatibility'] = {
             'detail': f'compatibility {compatibility_len} chars (budget {rules.max_compatibility_chars})',
