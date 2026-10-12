@@ -10,6 +10,7 @@ HOOK_IDS = [
     'no-em-dashes',
     'check-md-anchors',
     'check-claude-plugin-closure',
+    'check-version-bumps',
 ]
 
 

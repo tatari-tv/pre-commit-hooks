@@ -68,3 +68,13 @@ Example:
     hooks:
       - id: poetry-pkg-dep-constraint-format
 ```
+
+### Plugin version bumps
+
+For a Claude plugin marketplace where each PR carries its own version bump:
+
+- `check-version-bumps` fails when a changed plugin, or marketplace `metadata.version`, is below the version the change requires. It runs at `pre-push` and `manual`.
+- `compute-version-bump [base_ref] [head_ref]` raises those versions in place in each `plugin.json` and `marketplace.json`. It defaults to `origin/main` and `HEAD`. Run it with `uvx --from git+https://github.com/tatari-tv/pre-commit-hooks@<rev> compute-version-bump`.
+- Required versions: patch for any change, minor when a skill or agent is added, `0.1.0` for a new plugin. A larger manual version, such as a major bump, is kept. Reruns only touch what still needs a bump.
+- The check compares against the local `origin/main`, so a stale ref can flag plugins others changed. CI needs full history (`fetch-depth: 0`).
+- `stages: [pre-push]` installs nothing alone. Set `default_install_hook_types: [pre-commit, pre-push]` in your config.

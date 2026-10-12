@@ -122,3 +122,11 @@
   language: python
   pass_filenames: false
   always_run: true
+- id: check-version-bumps
+  name: check-version-bumps
+  description: Fail when changed plugins lack a version bump
+  entry: check-version-bumps
+  language: python
+  pass_filenames: false
+  always_run: true
+  stages: [pre-push, manual]
