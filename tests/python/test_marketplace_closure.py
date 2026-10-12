@@ -60,6 +60,13 @@ def test_tilde_fence_is_scanned(tmp_path):
     assert len(_check(tmp_path)) == 1
 
 
+def test_unclosed_prose_fence_hides_nested_tilde_block(tmp_path):
+    text = '```markdown\n~~~bash\nrun beta:two\n~~~\n'
+    _skill(tmp_path, 'alpha', 'one', {'notes.md': text})
+    _skill(tmp_path, 'beta', 'two')
+    assert _check(tmp_path) == []
+
+
 def test_markdown_fence_stays_prose(tmp_path):
     _skill(tmp_path, 'alpha', 'one', {'notes.md': _fence('markdown', 'see beta:two')})
     _skill(tmp_path, 'beta', 'two')

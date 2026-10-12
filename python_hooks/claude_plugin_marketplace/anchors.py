@@ -11,6 +11,7 @@ from python_hooks.claude_plugin_marketplace._common import tracked_files
 _FENCE_OPEN = re.compile(r'^ {0,3}(`{3,}|~{3,})')
 _INLINE_CODE = re.compile(r'(?<!`)(`+)(?!`).+?(?<!`)\1(?!`)')
 _HEADING = re.compile(r'^(#{1,6})\s+(.+?)\s*$', re.MULTILINE)
+_SETEXT = re.compile(r'^(?![#\s])(\S[^\n]*?)[ \t]*\n(?:=+|-+)[ \t]*$', re.MULTILINE)
 _ANCHOR_LINK = re.compile(r'\]\(#([^)\s]+)\)')
 _EMPHASIS = re.compile(r'(?<!\w)_+(.+?)_+(?!\w)')
 
@@ -47,8 +48,10 @@ def _mask_code(text: str) -> tuple:
 def _slug_set(prose: str) -> set:
     seen: dict = {}
     slugs = set()
-    for match in _HEADING.finditer(prose):
-        base = slugify(match.group(2))
+    found = [(m.start(), m.group(2)) for m in _HEADING.finditer(prose)]
+    found += [(m.start(), m.group(1)) for m in _SETEXT.finditer(prose)]
+    for _, heading in sorted(found):
+        base = slugify(heading)
         count = seen.get(base, 0)
         slugs.add(base if count == 0 else f'{base}-{count}')
         seen[base] = count + 1
