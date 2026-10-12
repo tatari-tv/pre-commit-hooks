@@ -4,7 +4,6 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import NamedTuple
 
 from python_hooks.claude_plugin_marketplace._common import repo_root
 from python_hooks.claude_plugin_marketplace.changes import added_paths
@@ -23,12 +22,6 @@ from python_hooks.claude_plugin_marketplace.version import parse_semver
 from python_hooks.claude_plugin_marketplace.version import write_version
 
 NEW_PLUGIN_VERSION = '0.1.0'
-
-
-class BumpPlan(NamedTuple):
-    affected: set
-    required: dict
-    marketplace: str | None
 
 
 def _parse_args(description: str, argv: list | None) -> argparse.Namespace:
@@ -50,13 +43,13 @@ def _version_of(data: dict | None) -> str | None:
     return data.get('version') if data else None
 
 
-def plan_bumps(root: Path, base_ref: str, head_ref: str) -> BumpPlan | None:
+def plan_bumps(root: Path, base_ref: str, head_ref: str) -> tuple | None:
     affected = affected_plugins(root, changed_paths(root, base_ref, head_ref), base_ref, head_ref)
     base_data = load_marketplace_at(root, base_ref)
     if base_data is None:
         return None
     if not affected:
-        return BumpPlan(set(), {}, None)
+        return set(), {}, None
 
     base_meta = (base_data.get('metadata') or {}).get('version')
     if base_meta is None:
@@ -73,10 +66,11 @@ def plan_bumps(root: Path, base_ref: str, head_ref: str) -> BumpPlan | None:
             continue
         bump = 'minor' if has_new_skill(name, added) or has_new_agent(name, added) else 'patch'
         level = max_bump(level, bump)
-        base_version = _version_of(load_plugin_json(root, name, base_ref))
-        if base_version is not None:
-            required[name] = bump_semver(base_version, bump)
-    return BumpPlan(affected, required, bump_semver(base_meta, level) if level else None)
+        base_manifest = load_plugin_json(root, name, base_ref)
+        if base_manifest is not None:
+            base_version = _version_of(base_manifest)
+            required[name] = bump_semver(base_version, bump) if base_version else NEW_PLUGIN_VERSION
+    return affected, required, bump_semver(base_meta, level) if level else None
 
 
 def check_main(argv: list | None = None) -> int:
@@ -84,21 +78,25 @@ def check_main(argv: list | None = None) -> int:
     root = repo_root()
     try:
         plan = plan_bumps(root, args.base_ref, args.head_ref)
-        if plan is None or not plan.affected:
+        if plan is None or not plan[0]:
             return 0
+        _, required_versions, required_meta = plan
         head_data = load_marketplace_at(root, args.head_ref)
         if head_data is None:
             print(f'error: {MARKETPLACE_PATH} not found at {args.head_ref}', file=sys.stderr)
             return 1
 
         errors = []
-        for name, required in sorted(plan.required.items()):
-            current = _version_of(load_plugin_json(root, name, args.head_ref))
-            if current is not None and parse_semver(current) < parse_semver(required):
+        for name, required in sorted(required_versions.items()):
+            manifest = load_plugin_json(root, name, args.head_ref)
+            if manifest is None:
+                continue
+            current = _version_of(manifest)
+            if current is None or parse_semver(current) < parse_semver(required):
                 errors.append(f"  plugin '{name}' is {current}, needs at least {required}")
         current_meta = (head_data.get('metadata') or {}).get('version')
-        if plan.marketplace and (current_meta is None or parse_semver(current_meta) < parse_semver(plan.marketplace)):
-            errors.append(f'  metadata.version is {current_meta}, needs at least {plan.marketplace}')
+        if required_meta and (current_meta is None or parse_semver(current_meta) < parse_semver(required_meta)):
+            errors.append(f'  metadata.version is {current_meta}, needs at least {required_meta}')
     except (RuntimeError, ValueError) as exc:
         return _fail(exc)
 
@@ -119,10 +117,11 @@ def compute_main(argv: list | None = None) -> int:
         if plan is None:
             print(f'error: {MARKETPLACE_PATH} not found at {args.base_ref}', file=sys.stderr)
             return 1
-        if not plan.affected:
+        affected, required_versions, required_meta = plan
+        if not affected:
             return 0
 
-        for name, required in sorted(plan.required.items()):
+        for name, required in sorted(required_versions.items()):
             path = root / manifest_rel(name)
             if not path.is_file():
                 continue
@@ -136,11 +135,11 @@ def compute_main(argv: list | None = None) -> int:
             print(f'error: {MARKETPLACE_PATH} not found', file=sys.stderr)
             return 1
         data = json.loads(marketplace.read_text(encoding='utf-8'))
-        if not isinstance(data.get('metadata'), dict) or plan.marketplace is None:
+        if not isinstance(data.get('metadata'), dict) or required_meta is None:
             print(f'error: {MARKETPLACE_PATH} has no metadata object', file=sys.stderr)
             return 1
         current_meta = data['metadata'].get('version')
-        new_meta = higher_version(plan.marketplace, current_meta)
+        new_meta = higher_version(required_meta, current_meta)
         if write_version(marketplace, new_meta, 'metadata'):
             print(f'{MARKETPLACE_PATH}: {current_meta} -> {new_meta}')
     except (RuntimeError, ValueError) as exc:

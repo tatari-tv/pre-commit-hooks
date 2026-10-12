@@ -32,8 +32,10 @@ def load_plugin_json(root: Path, name: str, rev: str | None = None) -> dict | No
     try:
         data = json.loads(raw)
     except json.JSONDecodeError:
-        return None
-    return data if isinstance(data, dict) else None
+        data = None
+    if not isinstance(data, dict):
+        raise ValueError(f'{manifest_rel(name)} at {rev or "worktree"} is not a valid JSON object')
+    return data
 
 
 def parse_semver(version: str) -> tuple:
@@ -44,9 +46,7 @@ def parse_semver(version: str) -> tuple:
 
 
 def max_bump(a: str | None, b: str | None) -> str | None:
-    if a is None or b is None:
-        return a or b
-    return BUMP_ORDER[max(BUMP_ORDER.index(a), BUMP_ORDER.index(b))]
+    return max(filter(None, (a, b)), key=BUMP_ORDER.index, default=None)
 
 
 def bump_semver(version: str, bump: str) -> str:

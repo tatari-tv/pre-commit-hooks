@@ -14,7 +14,7 @@ MANIFEST_PARTS = ('.claude-plugin', 'plugin.json')
 
 def _diff_paths(root: Path, base_ref: str, head_ref: str, diff_filter: str) -> set:
     result = subprocess.run(
-        ['git', 'diff', '-z', '--name-only', f'--diff-filter={diff_filter}', f'{base_ref}...{head_ref}'],
+        ['git', 'diff', '-z', '--name-only', '--no-renames', f'--diff-filter={diff_filter}', f'{base_ref}...{head_ref}'],
         cwd=root,
         capture_output=True,
         text=True,

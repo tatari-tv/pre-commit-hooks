@@ -82,6 +82,7 @@ def test_compute_then_check_passes(repo):
 def test_check_passes_when_no_plugin_changed(repo):
     _write(repo, 'README.md', 'hi\n')
     _commit(repo)
+    assert changes.changed_paths(repo, 'main', 'HEAD') == {'README.md'}
     assert bumps.check_main(['main']) == 0
     assert bumps.compute_main(['main']) == 0
     assert _meta(repo) == '1.0.0'
@@ -118,8 +119,9 @@ def test_new_skill_after_patch_bump_upgrades_to_minor(repo):
 def test_new_agent_is_a_minor_bump(repo):
     _write(repo, 'plugins/alpha/agents/helper.md', 'agent\n')
     _commit(repo)
-    bumps.compute_main(['main'])
+    assert bumps.compute_main(['main']) == 0
     assert _version(repo, 'alpha') == '0.2.0'
+    assert _meta(repo) == '1.1.0'
 
 
 def test_check_fails_patch_bump_when_skill_was_added(repo):
@@ -141,23 +143,30 @@ def test_manual_major_bump_is_not_lowered(repo):
     assert _meta(repo) == '2.0.0'
 
 
-def test_unchanged_rerun_leaves_manifests_byte_identical(repo):
+def test_unchanged_rerun_leaves_manifests_byte_identical(repo, capsys):
     _touch(repo, 'alpha')
     _commit(repo)
-    bumps.compute_main(['main'])
+    assert bumps.compute_main(['main']) == 0
+    assert (_version(repo, 'alpha'), _meta(repo)) == ('0.1.1', '1.0.1')
     plugin = repo / 'plugins/alpha/.claude-plugin/plugin.json'
     market = repo / '.claude-plugin/marketplace.json'
     before = (plugin.read_bytes(), market.read_bytes())
+    capsys.readouterr()
     assert bumps.compute_main(['main']) == 0
     assert (plugin.read_bytes(), market.read_bytes()) == before
+    assert capsys.readouterr().out == ''
 
 
-def test_new_plugin_requires_initial_version_and_keeps_larger(repo):
+def test_new_plugin_requires_initial_version_and_keeps_larger(repo, capsys):
     _write(repo, 'plugins/gamma/.claude-plugin/plugin.json', _manifest('gamma', '0.3.0'))
     _write(repo, 'plugins/delta/.claude-plugin/plugin.json', _manifest('delta', '0.0.1'))
-    _write(repo, '.claude-plugin/marketplace.json', _marketplace('1.0.0', ['alpha', 'beta', 'gamma', 'delta']))
+    _write(repo, '.claude-plugin/marketplace.json', _marketplace('1.1.0', ['alpha', 'beta', 'gamma', 'delta']))
     _commit(repo)
     assert bumps.check_main(['main']) == 1
+    err = capsys.readouterr().err
+    assert "plugin 'delta'" in err
+    assert "plugin 'gamma'" not in err
+    assert 'metadata.version' not in err
     bumps.compute_main(['main'])
     assert _version(repo, 'gamma') == '0.3.0'
     assert _version(repo, 'delta') == '0.1.0'
@@ -219,6 +228,7 @@ def test_version_only_manifest_change_is_not_affected(repo):
     _write(repo, 'plugins/alpha/.claude-plugin/plugin.json', _manifest('alpha', '0.1.1'))
     _commit(repo)
     paths = changes.changed_paths(repo, 'main', 'HEAD')
+    assert paths == {'plugins/alpha/.claude-plugin/plugin.json'}
     assert changes.affected_plugins(repo, paths, 'main', 'HEAD') == set()
 
 
@@ -235,6 +245,7 @@ def test_loose_file_under_plugins_is_not_a_plugin(repo):
     _write(repo, 'plugins/README.md', 'loose\n')
     _commit(repo)
     paths = changes.changed_paths(repo, 'main', 'HEAD')
+    assert paths == {'plugins/README.md'}
     assert changes.affected_plugins(repo, paths, 'main', 'HEAD') == set()
 
 
@@ -262,13 +273,39 @@ def test_shallow_history_prints_fetch_hint(repo, tmp_path_factory, monkeypatch, 
 
 
 def test_missing_base_marketplace_is_not_a_check_failure(repo):
-    _git(repo, 'checkout', '-q', '--orphan', 'bare')
-    _git(repo, 'rm', '-rfq', '.')
-    _write(repo, 'README.md', 'x\n')
-    _commit(repo, 'root')
-    _git(repo, 'checkout', '-q', 'feature')
+    _git(repo, 'checkout', '-q', 'main')
+    _git(repo, 'rm', '-q', '.claude-plugin/marketplace.json')
+    _commit(repo, 'drop marketplace')
     _git(repo, 'checkout', '-q', '-b', 'topic')
     _touch(repo, 'alpha')
     _commit(repo)
-    _git(repo, 'merge', '-q', '--allow-unrelated-histories', '-m', 'join', 'bare')
-    assert bumps.check_main(['bare']) == 0
+    assert bumps.check_main(['main']) == 0
+    assert bumps.compute_main(['main']) == 1
+
+
+def test_moved_skill_requires_minor_for_destination_and_patch_for_source(repo):
+    _git(repo, 'mv', 'plugins/alpha/skills/one', 'plugins/beta/skills/moved')
+    _commit(repo, 'move skill')
+    assert bumps.check_main(['main']) == 1
+    bumps.compute_main(['main'])
+    assert _version(repo, 'alpha') == '0.1.1'
+    assert _version(repo, 'beta') == '0.2.0'
+    assert _meta(repo) == '1.1.0'
+
+
+def test_changed_plugin_whose_version_was_removed_fails(repo, capsys):
+    _touch(repo, 'alpha')
+    _write(repo, 'plugins/alpha/.claude-plugin/plugin.json', json.dumps({'name': 'alpha'}) + '\n')
+    _write(repo, '.claude-plugin/marketplace.json', _marketplace('1.0.1', ['alpha', 'beta']))
+    _commit(repo)
+    assert bumps.check_main(['main']) == 1
+    assert "plugin 'alpha' is None" in capsys.readouterr().err
+
+
+def test_malformed_manifest_is_an_error_not_a_skip(repo, capsys):
+    _touch(repo, 'alpha')
+    _write(repo, 'plugins/alpha/.claude-plugin/plugin.json', '{\n')
+    _write(repo, '.claude-plugin/marketplace.json', _marketplace('1.0.1', ['alpha', 'beta']))
+    _commit(repo)
+    assert bumps.check_main(['main']) == 2
+    assert 'not a valid JSON' in capsys.readouterr().err
