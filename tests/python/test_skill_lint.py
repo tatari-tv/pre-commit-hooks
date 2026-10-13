@@ -592,3 +592,87 @@ class TestBodyExcludesFrontmatter:
         baseline = {'skills/fat': {'oversized_body': {'magnitude': 60, 'reason': 'pre-existing'}}}
         (tmp_path / 'baseline.json').write_text(json.dumps(baseline))
         assert main(['--max-body-lines', '50', '--body-excludes-frontmatter']) == 1
+
+
+class TestValueTypes:
+    FLAG = '--check-value-types'
+
+    def raw(self, root, frontmatter, name='typed'):
+        skill_dir = root / 'skills' / name
+        skill_dir.mkdir(parents=True)
+        (skill_dir / 'SKILL.md').write_text(f'---\n{frontmatter}---\n\nbody\n')
+
+    def test_off_by_default(self, skills_repo):
+        self.raw(skills_repo, 'name: typed\ndescription: 42\n')
+        assert main([]) == 0
+
+    @pytest.mark.parametrize('value', ['42', '-7', 'true', 'false', 'null', '~', '[a, b]'])
+    def test_non_string_description_fails(self, skills_repo, capsys, value):
+        self.raw(skills_repo, f'name: typed\ndescription: {value}\n')
+        assert main([self.FLAG]) == 1
+        out = capsys.readouterr().out
+        assert 'skills/typed: non_string_value' in out
+        assert 'description' in out
+
+    def test_each_string_key_is_checked(self, skills_repo, capsys):
+        self.raw(skills_repo, 'name: 42\ndescription: ok\ncompatibility: true\n')
+        assert main([self.FLAG]) == 1
+        assert 'compatibility, name' in capsys.readouterr().out
+
+    def test_allowed_tools_number_fails(self, skills_repo, capsys):
+        self.raw(skills_repo, 'name: typed\ndescription: ok\nallowed-tools: 42\n')
+        assert main([self.FLAG]) == 1
+        assert 'allowed-tools' in capsys.readouterr().out
+
+    @pytest.mark.parametrize(
+        'frontmatter',
+        [
+            'name: typed\ndescription: "42"\n',
+            "name: typed\ndescription: '42'\n",
+            'name: typed\ndescription: 1.5\n',
+            'name: typed\ndescription: 42 widgets\n',
+            'name: typed\ndescription: 42\n  and more\n',
+            'name: typed\ndescription: |\n  42\n',
+            'name: typed\ndescription: ok\nallowed-tools: Read, Grep\n',
+            'name: typed\ndescription: ok\nallowed-tools: [Read, Grep]\n',
+            'name: typed\ndescription: ok\nallowed-tools:\n  - Read\n  - Grep\n',
+        ],
+    )
+    def test_valid_shapes_pass(self, skills_repo, frontmatter):
+        self.raw(skills_repo, frontmatter)
+        assert main([self.FLAG, '--allowed-key', 'allowed-tools']) == 0
+
+    def test_mapping_valued_description_fails(self, skills_repo):
+        self.raw(skills_repo, 'name: typed\ndescription:\n  nested: value\n')
+        assert main([self.FLAG]) == 1
+
+    def test_only_runs_the_single_check(self, skills_repo, capsys):
+        self.raw(skills_repo, 'name: typed\ndescription: 42\n')
+        assert main([self.FLAG, '--only', 'non_string_value']) == 1
+        assert main([self.FLAG, '--only', 'oversized_body']) == 0
+
+    def test_baseline_absorbs_then_ratchets(self, skills_repo, capsys):
+        self.raw(skills_repo, 'name: typed\ndescription: 42\n')
+        assert main([self.FLAG, '--baseline', 'b.json', '--write-baseline']) == 0
+        written = json.loads((skills_repo / 'b.json').read_text())
+        assert written['skills/typed']['non_string_value']['magnitude'] == ['description']
+        assert main([self.FLAG, '--baseline', 'b.json']) == 0
+        self.raw_rewrite(skills_repo, 'name: typed\ndescription: 42\ncompatibility: true\n')
+        assert main([self.FLAG, '--baseline', 'b.json']) == 1
+        assert 'grew past its baselined magnitude' in capsys.readouterr().out
+
+    def raw_rewrite(self, root, frontmatter):
+        (root / 'skills' / 'typed' / 'SKILL.md').write_text(f'---\n{frontmatter}---\n\nbody\n')
+
+    def test_fixed_baseline_entry_goes_stale(self, skills_repo, capsys):
+        self.raw(skills_repo, 'name: typed\ndescription: 42\n')
+        assert main([self.FLAG, '--baseline', 'b.json', '--write-baseline']) == 0
+        self.raw_rewrite(skills_repo, 'name: typed\ndescription: fixed\n')
+        assert main([self.FLAG, '--baseline', 'b.json']) == 1
+        assert 'stale' in capsys.readouterr().out
+
+    def test_baseline_entry_left_alone_when_flag_off(self, skills_repo):
+        self.raw(skills_repo, 'name: typed\ndescription: 42\n')
+        assert main([self.FLAG, '--baseline', 'b.json', '--write-baseline']) == 0
+        self.raw_rewrite(skills_repo, 'name: typed\ndescription: fixed\n')
+        assert main(['--baseline', 'b.json']) == 0

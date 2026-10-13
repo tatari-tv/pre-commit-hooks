@@ -74,6 +74,7 @@ Example:
 - `check-claude-plugin-names` fails on a plugin directory that does not match its `plugin.json` name, and on any symlink at or under `plugins/<name>/skills`, at any depth.
 - `check-root-agent-docs` fails when the root `CLAUDE.md` or `AGENTS.md` is a symlink. A missing file is not checked.
 - `skill-lint --body-excludes-frontmatter` counts `--max-body-lines` over the lines after the frontmatter instead of the whole file.
+- `skill-lint --check-value-types` requires string `name`, `description` and `compatibility`, and a string or list `allowed-tools`. An unquoted number, boolean or null fails.
 
 ### Plugin version bumps
 
