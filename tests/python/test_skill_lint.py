@@ -567,3 +567,28 @@ class TestBodyExcludesFrontmatter:
         self.write_fat(tmp_path, frontmatter_extra_lines=0, body_lines=50)
         assert main(['--max-body-lines', '50']) == 1
         assert main(['--max-body-lines', '50', '--body-excludes-frontmatter']) == 0
+
+    def test_flag_counts_crlf_body_lines(self, tmp_path, monkeypatch, capsys):
+        monkeypatch.chdir(tmp_path)
+        skill_dir = tmp_path / 'skills' / 'crlf'
+        skill_dir.mkdir(parents=True)
+        body = ''.join(f'Line {i}\r\n' for i in range(51))
+        (skill_dir / 'SKILL.md').write_bytes(f'---\r\nname: crlf\r\ndescription: ok\r\n---\r\n{body}'.encode())
+        assert main(['--max-body-lines', '50', '--body-excludes-frontmatter']) == 1
+        assert '51 lines' in capsys.readouterr().out
+
+    def test_flag_baseline_records_the_body_count(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        self.write_fat(tmp_path, frontmatter_extra_lines=0, body_lines=60)
+        args = ['--max-body-lines', '50', '--body-excludes-frontmatter']
+        assert main([*args, '--baseline', 'baseline.json', '--write-baseline']) == 0
+        written = json.loads((tmp_path / 'baseline.json').read_text())
+        assert written['skills/fat']['oversized_body']['magnitude'] == 60
+        assert main([*args, '--baseline', 'baseline.json']) == 0
+
+    def test_flag_ignores_a_stray_baseline_without_the_baseline_arg(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        self.write_fat(tmp_path, frontmatter_extra_lines=0, body_lines=60)
+        baseline = {'skills/fat': {'oversized_body': {'magnitude': 60, 'reason': 'pre-existing'}}}
+        (tmp_path / 'baseline.json').write_text(json.dumps(baseline))
+        assert main(['--max-body-lines', '50', '--body-excludes-frontmatter']) == 1
