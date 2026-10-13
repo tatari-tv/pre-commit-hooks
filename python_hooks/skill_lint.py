@@ -25,6 +25,12 @@ every stricter house rule is opt-in through a hook arg, never a module constant:
   such as conductor's classification). No defaults.
 - --require-spec: require tests/spec.json in every skill directory (house rule for eval
   coverage). Off by default.
+- --check-name: skill name (frontmatter `name`, else the directory name) must be kebab-case
+  with no leading, trailing or double hyphen, at most 64 chars, and equal the directory name.
+- --no-angle-brackets: description may not contain `<` or `>`. Stricter than the platform's
+  "no XML tags" rule.
+- --max-compatibility-chars N: max `compatibility` length; 0 (default) disables.
+  Lengths use the stripped value, so a block scalar's trailing newline does not count.
 
 Discovery: --skills-root is a repeatable glob, default `skills` and `plugins/*/skills`,
 covering both consumer layouts. Skill directories that git ignores are skipped.
@@ -61,6 +67,7 @@ DEFAULT_SKILLS_ROOTS = ('skills', 'plugins/*/skills')
 DEFAULT_MAX_DESCRIPTION_CHARS = 1024
 DEFAULT_MAX_BODY_LINES = 500
 DEFAULT_REQUIRED_KEYS = ('description',)
+MAX_NAME_CHARS = 64
 # The frontmatter surface documented by the platform for plugin skills.
 PLATFORM_FRONTMATTER_KEYS = frozenset(
     (
@@ -88,12 +95,15 @@ CHECKS = (
     'oversized_description',
     'invalid_value',
     'missing_spec',
+    'invalid_name',
+    'description_angle_brackets',
+    'oversized_compatibility',
 )
 # Checks whose magnitude is a list the ratchet compares as a set (growth = a new member
 # appearing, not just a longer list). missing_frontmatter and unexpected_frontmatter use bare
 # key names; invalid_value uses "key=value" pairs so a drift to a different bad value under
 # an already-baselined key still counts as growth, not just the key's continued presence.
-SET_MAGNITUDE_CHECKS = frozenset(('missing_frontmatter', 'unexpected_frontmatter', 'invalid_value'))
+SET_MAGNITUDE_CHECKS = frozenset(('missing_frontmatter', 'unexpected_frontmatter', 'invalid_value', 'invalid_name'))
 # Sentinel appended to missing_frontmatter's magnitude when SKILL.md itself is absent, so that
 # state is a strict superset of (and never conflated with) "file present, required key(s) empty"
 # for the same key names - `<` and `>` can't appear in a parsed frontmatter key, so this can
@@ -117,6 +127,9 @@ class Rules:
     allowed_keys: frozenset[str] = PLATFORM_FRONTMATTER_KEYS
     key_values: tuple[tuple[str, frozenset[str]], ...] = ()
     require_spec: bool = False
+    check_name: bool = False
+    no_angle_brackets: bool = False
+    max_compatibility_chars: int = 0
 
     def all_allowed_keys(self) -> frozenset[str]:
         return self.allowed_keys | frozenset(self.required_keys)
@@ -141,6 +154,12 @@ class Rules:
             active.add('invalid_value')
         if self.require_spec:
             active.add('missing_spec')
+        if self.check_name:
+            active.add('invalid_name')
+        if self.no_angle_brackets:
+            active.add('description_angle_brackets')
+        if self.max_compatibility_chars:
+            active.add('oversized_compatibility')
         return frozenset(active)
 
 
@@ -262,6 +281,19 @@ def filter_gitignored(skill_dirs: list[str]) -> list[str]:
     return [d for d in skill_dirs if d.rstrip('/') not in ignored]
 
 
+def name_problems(name: str, dir_name: str) -> list[str]:
+    problems = []
+    if not re.fullmatch(r'[a-z0-9-]+', name):
+        problems.append('kebab-case')
+    if name.startswith('-') or name.endswith('-') or '--' in name:
+        problems.append('hyphens')
+    if len(name) > MAX_NAME_CHARS:
+        problems.append('too-long')
+    if name != dir_name:
+        problems.append('dir-mismatch')
+    return problems
+
+
 def scan_skill_dir(skill_dir: str, rules: Rules) -> tuple[dict[str, Violation], int]:
     """Return (violations, listing_length) for one skill directory.
 
@@ -331,6 +363,24 @@ def scan_skill_dir(skill_dir: str, rules: Rules) -> tuple[dict[str, Violation], 
             'magnitude': sorted(bad_pairs),
         }
 
+    if rules.check_name:
+        dir_name = os.path.basename(os.path.normpath(skill_dir))
+        name = keys['name'].strip() if 'name' in keys else dir_name
+        problems = name_problems(name, dir_name)
+        if problems:
+            violations['invalid_name'] = {'detail': f'name {name!r}: {", ".join(problems)}', 'magnitude': sorted(problems)}
+
+    description = keys.get('description', '')
+    if rules.no_angle_brackets and ('<' in description or '>' in description):
+        violations['description_angle_brackets'] = {'detail': 'description contains < or >', 'magnitude': None}
+
+    compatibility_len = len(keys.get('compatibility', '').strip())
+    if rules.max_compatibility_chars and compatibility_len > rules.max_compatibility_chars:
+        violations['oversized_compatibility'] = {
+            'detail': f'compatibility {compatibility_len} chars (budget {rules.max_compatibility_chars})',
+            'magnitude': compatibility_len,
+        }
+
     desc_len = len(keys.get('description', ''))
     wtu_len = len(keys.get('when_to_use', ''))
     listing_len = desc_len + wtu_len
@@ -352,7 +402,7 @@ def magnitude_grew(vtype: str, baseline_magnitude: Magnitude, current_magnitude:
         baseline_keys = baseline_magnitude if isinstance(baseline_magnitude, list) else []
         current_keys = current_magnitude if isinstance(current_magnitude, list) else []
         return not set(current_keys) <= set(baseline_keys)
-    if vtype == 'missing_spec':
+    if vtype in ('missing_spec', 'description_angle_brackets'):
         return False  # presence check only - no size to grow
     if not isinstance(baseline_magnitude, int) or not isinstance(current_magnitude, int):
         return True  # malformed baseline entry - fail closed
@@ -508,6 +558,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         help='closed value set for a frontmatter key when present; repeatable',
     )
     parser.add_argument('--require-spec', action='store_true', help='require tests/spec.json in every skill directory')
+    parser.add_argument('--check-name', action='store_true', help='require kebab-case names that match the skill directory')
+    parser.add_argument('--no-angle-brackets', action='store_true', help='reject < and > in descriptions')
+    parser.add_argument(
+        '--max-compatibility-chars',
+        type=int,
+        default=0,
+        metavar='N',
+        help='max compatibility chars, 0 disables (default 0)',
+    )
     parser.add_argument('--only', choices=CHECKS, default=None, help='run a single check (one hook per check); default runs all')
     args = parser.parse_args(argv)
 
@@ -523,6 +582,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         allowed_keys=PLATFORM_FRONTMATTER_KEYS | frozenset(args.allowed_keys),
         key_values=parse_key_values(args.key_values, parser),
         require_spec=args.require_spec,
+        check_name=args.check_name,
+        no_angle_brackets=args.no_angle_brackets,
+        max_compatibility_chars=args.max_compatibility_chars,
     )
 
     baseline: Baseline = {}
