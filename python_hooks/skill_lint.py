@@ -15,6 +15,8 @@ every stricter house rule is opt-in through a hook arg, never a module constant:
   skill that sets it also needs --allowed-key when_to_use or it fails unexpected_frontmatter.
 - --max-body-lines (default 500): Anthropic's published authoring best practice
   ("keep SKILL.md under 500 lines"). 0 disables the check.
+- --body-excludes-frontmatter: count --max-body-lines over the lines after the closing
+  frontmatter fence instead of the whole file. Off by default.
 - --required-key (default: description): the platform's only required frontmatter key
   (`name` falls back to the directory name). Repeat the flag to require more keys;
   passing it replaces the default set.
@@ -130,6 +132,7 @@ class Rules:
     check_name: bool = False
     no_angle_brackets: bool = False
     max_compatibility_chars: int = 0
+    body_excludes_frontmatter: bool = False
 
     def all_allowed_keys(self) -> frozenset[str]:
         return self.allowed_keys | frozenset(self.required_keys)
@@ -167,6 +170,14 @@ def split_frontmatter(content: str) -> str | None:
     """Return the raw YAML frontmatter text, or None if the file has none."""
     m = re.match(r'^---\n(.*?\n)---(?:\n|$)', content, re.DOTALL)
     return m.group(1) if m else None
+
+
+BODY_FRONTMATTER = re.compile(r'^---\s*\r?\n.*?\r?\n---\s*(?:\r?\n|$)', re.DOTALL)
+
+
+def body_line_count(content: str) -> int:
+    """Lines after frontmatter; all if none."""
+    return len(BODY_FRONTMATTER.sub('', content, count=1).splitlines())
 
 
 def parse_frontmatter_keys(fm_text: str) -> dict[str, str]:
@@ -320,7 +331,7 @@ def scan_skill_dir(skill_dir: str, rules: Rules) -> tuple[dict[str, Violation], 
     with open(skill_md, encoding='utf-8') as f:
         content = f.read().replace('\r\n', '\n').replace('\r', '\n')
 
-    line_count = len(content.splitlines())
+    line_count = body_line_count(content) if rules.body_excludes_frontmatter else len(content.splitlines())
     if rules.max_body_lines and line_count > rules.max_body_lines:
         violations['oversized_body'] = {
             'detail': f'{line_count} lines (budget {rules.max_body_lines})',
@@ -527,6 +538,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         help=f'max SKILL.md lines, 0 disables (default {DEFAULT_MAX_BODY_LINES}: Anthropic authoring best practice)',
     )
     parser.add_argument(
+        '--body-excludes-frontmatter',
+        action='store_true',
+        help='count --max-body-lines over the lines after the frontmatter, not the whole file',
+    )
+    parser.add_argument(
         '--max-description-chars',
         type=int,
         default=DEFAULT_MAX_DESCRIPTION_CHARS,
@@ -585,6 +601,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         check_name=args.check_name,
         no_angle_brackets=args.no_angle_brackets,
         max_compatibility_chars=args.max_compatibility_chars,
+        body_excludes_frontmatter=args.body_excludes_frontmatter,
     )
 
     baseline: Baseline = {}

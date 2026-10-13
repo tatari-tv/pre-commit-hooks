@@ -11,6 +11,7 @@ HOOK_IDS = [
     'check-md-anchors',
     'check-claude-plugin-closure',
     'check-version-bumps',
+    'check-root-agent-docs',
 ]
 
 

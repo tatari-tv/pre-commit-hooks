@@ -503,3 +503,67 @@ class TestOptInBaseline:
         assert written['description_angle_brackets']['magnitude'] is None
         assert written['oversized_compatibility']['magnitude'] == 600
         assert main(['--baseline', 'baseline.json', *ALL_FLAGS]) == 0
+
+
+class TestBodyExcludesFrontmatter:
+    def write_fat(self, root, frontmatter_extra_lines, body_lines, blank_after_fence=0):
+        skill_dir = root / 'skills' / 'fat'
+        skill_dir.mkdir(parents=True)
+        extra = ''.join(f'key{i}: v\n' for i in range(frontmatter_extra_lines))
+        body = '\n' * blank_after_fence + '\n'.join(f'Line {i}' for i in range(body_lines)) + '\n'
+        (skill_dir / 'SKILL.md').write_text(f'---\nname: fat\ndescription: ok\n{extra}---\n{body}')
+
+    def test_default_counts_the_whole_file(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        self.write_fat(tmp_path, frontmatter_extra_lines=5, body_lines=48)
+        assert (
+            main(
+                [
+                    '--max-body-lines',
+                    '50',
+                    '--allowed-key',
+                    'key0',
+                    '--allowed-key',
+                    'key1',
+                    '--allowed-key',
+                    'key2',
+                    '--allowed-key',
+                    'key3',
+                    '--allowed-key',
+                    'key4',
+                ]
+            )
+            == 1
+        )
+
+    def test_flag_counts_only_the_body(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        self.write_fat(tmp_path, frontmatter_extra_lines=5, body_lines=48)
+        args = ['--max-body-lines', '50', '--body-excludes-frontmatter']
+        for i in range(5):
+            args += ['--allowed-key', f'key{i}']
+        assert main(args) == 0
+
+    def test_flag_still_fails_an_oversized_body(self, tmp_path, monkeypatch, capsys):
+        monkeypatch.chdir(tmp_path)
+        self.write_fat(tmp_path, frontmatter_extra_lines=0, body_lines=51)
+        assert main(['--max-body-lines', '50', '--body-excludes-frontmatter']) == 1
+        assert '51 lines' in capsys.readouterr().out
+
+    def test_flag_drops_blank_lines_after_the_closing_fence(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        self.write_fat(tmp_path, frontmatter_extra_lines=0, body_lines=50, blank_after_fence=3)
+        assert main(['--max-body-lines', '50', '--body-excludes-frontmatter']) == 0
+
+    def test_flag_counts_every_line_without_frontmatter(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        skill_dir = tmp_path / 'skills' / 'bare'
+        skill_dir.mkdir(parents=True)
+        (skill_dir / 'SKILL.md').write_text('\n'.join(f'Line {i}' for i in range(60)) + '\n')
+        assert main(['--max-body-lines', '50', '--body-excludes-frontmatter', '--only', 'oversized_body']) == 1
+
+    def test_flag_off_by_default_leaves_baseline_runs_unchanged(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        self.write_fat(tmp_path, frontmatter_extra_lines=0, body_lines=50)
+        assert main(['--max-body-lines', '50']) == 1
+        assert main(['--max-body-lines', '50', '--body-excludes-frontmatter']) == 0

@@ -69,6 +69,12 @@ Example:
       - id: poetry-pkg-dep-constraint-format
 ```
 
+### Plugin and skill checks
+
+- `check-claude-plugin-names` fails on a plugin directory that does not match its `plugin.json` name, and on any symlink at or under `plugins/<name>/skills`, at any depth.
+- `check-root-agent-docs` fails when the root `CLAUDE.md` or `AGENTS.md` is a symlink. A missing file is not checked.
+- `skill-lint --body-excludes-frontmatter` counts `--max-body-lines` over the lines after the frontmatter instead of the whole file.
+
 ### Plugin version bumps
 
 For a Claude plugin marketplace where each PR carries its own version bump:
