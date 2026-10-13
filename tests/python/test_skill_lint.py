@@ -503,3 +503,210 @@ class TestOptInBaseline:
         assert written['description_angle_brackets']['magnitude'] is None
         assert written['oversized_compatibility']['magnitude'] == 600
         assert main(['--baseline', 'baseline.json', *ALL_FLAGS]) == 0
+
+
+class TestBodyExcludesFrontmatter:
+    def write_fat(self, root, frontmatter_extra_lines, body_lines, blank_after_fence=0):
+        skill_dir = root / 'skills' / 'fat'
+        skill_dir.mkdir(parents=True)
+        extra = ''.join(f'key{i}: v\n' for i in range(frontmatter_extra_lines))
+        body = '\n' * blank_after_fence + '\n'.join(f'Line {i}' for i in range(body_lines)) + '\n'
+        (skill_dir / 'SKILL.md').write_text(f'---\nname: fat\ndescription: ok\n{extra}---\n{body}')
+
+    def test_default_counts_the_whole_file(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        self.write_fat(tmp_path, frontmatter_extra_lines=5, body_lines=48)
+        assert (
+            main(
+                [
+                    '--max-body-lines',
+                    '50',
+                    '--allowed-key',
+                    'key0',
+                    '--allowed-key',
+                    'key1',
+                    '--allowed-key',
+                    'key2',
+                    '--allowed-key',
+                    'key3',
+                    '--allowed-key',
+                    'key4',
+                ]
+            )
+            == 1
+        )
+
+    def test_flag_counts_only_the_body(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        self.write_fat(tmp_path, frontmatter_extra_lines=5, body_lines=48)
+        args = ['--max-body-lines', '50', '--body-excludes-frontmatter']
+        for i in range(5):
+            args += ['--allowed-key', f'key{i}']
+        assert main(args) == 0
+
+    def test_flag_still_fails_an_oversized_body(self, tmp_path, monkeypatch, capsys):
+        monkeypatch.chdir(tmp_path)
+        self.write_fat(tmp_path, frontmatter_extra_lines=0, body_lines=51)
+        assert main(['--max-body-lines', '50', '--body-excludes-frontmatter']) == 1
+        assert '51 lines' in capsys.readouterr().out
+
+    def test_flag_drops_blank_lines_after_the_closing_fence(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        self.write_fat(tmp_path, frontmatter_extra_lines=0, body_lines=50, blank_after_fence=3)
+        assert main(['--max-body-lines', '50', '--body-excludes-frontmatter']) == 0
+
+    def test_flag_counts_every_line_without_frontmatter(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        skill_dir = tmp_path / 'skills' / 'bare'
+        skill_dir.mkdir(parents=True)
+        (skill_dir / 'SKILL.md').write_text('\n'.join(f'Line {i}' for i in range(60)) + '\n')
+        assert main(['--max-body-lines', '50', '--body-excludes-frontmatter', '--only', 'oversized_body']) == 1
+
+    def test_flag_off_by_default_leaves_baseline_runs_unchanged(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        self.write_fat(tmp_path, frontmatter_extra_lines=0, body_lines=50)
+        assert main(['--max-body-lines', '50']) == 1
+        assert main(['--max-body-lines', '50', '--body-excludes-frontmatter']) == 0
+
+    def test_flag_counts_crlf_body_lines(self, tmp_path, monkeypatch, capsys):
+        monkeypatch.chdir(tmp_path)
+        skill_dir = tmp_path / 'skills' / 'crlf'
+        skill_dir.mkdir(parents=True)
+        body = ''.join(f'Line {i}\r\n' for i in range(51))
+        (skill_dir / 'SKILL.md').write_bytes(f'---\r\nname: crlf\r\ndescription: ok\r\n---\r\n{body}'.encode())
+        assert main(['--max-body-lines', '50', '--body-excludes-frontmatter']) == 1
+        assert '51 lines' in capsys.readouterr().out
+
+    def test_flag_baseline_records_the_body_count(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        self.write_fat(tmp_path, frontmatter_extra_lines=0, body_lines=60)
+        args = ['--max-body-lines', '50', '--body-excludes-frontmatter']
+        assert main([*args, '--baseline', 'baseline.json', '--write-baseline']) == 0
+        written = json.loads((tmp_path / 'baseline.json').read_text())
+        assert written['skills/fat']['oversized_body']['magnitude'] == 60
+        assert main([*args, '--baseline', 'baseline.json']) == 0
+
+    def test_flag_ignores_a_stray_baseline_without_the_baseline_arg(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        self.write_fat(tmp_path, frontmatter_extra_lines=0, body_lines=60)
+        baseline = {'skills/fat': {'oversized_body': {'magnitude': 60, 'reason': 'pre-existing'}}}
+        (tmp_path / 'baseline.json').write_text(json.dumps(baseline))
+        assert main(['--max-body-lines', '50', '--body-excludes-frontmatter']) == 1
+
+
+class TestValueTypes:
+    FLAG = '--check-value-types'
+
+    def test_off_by_default(self, skills_repo):
+        write_raw_skill(skills_repo / 'skills', 'typed', 'name: typed\ndescription: 42\n')
+        assert main([]) == 0
+
+    @pytest.mark.parametrize('value', ['42', '-7', 'true', 'false', 'null', '~', '[a, b]'])
+    def test_non_string_description_fails(self, skills_repo, capsys, value):
+        write_raw_skill(skills_repo / 'skills', 'typed', f'name: typed\ndescription: {value}\n')
+        assert main([self.FLAG]) == 1
+        out = capsys.readouterr().out
+        assert 'skills/typed: non_string_value' in out
+        assert 'description' in out
+
+    def test_each_string_key_is_checked(self, skills_repo, capsys):
+        write_raw_skill(skills_repo / 'skills', 'typed', 'name: 42\ndescription: ok\ncompatibility: true\n')
+        assert main([self.FLAG]) == 1
+        assert 'compatibility, name' in capsys.readouterr().out
+
+    def test_allowed_tools_number_fails(self, skills_repo, capsys):
+        write_raw_skill(skills_repo / 'skills', 'typed', 'name: typed\ndescription: ok\nallowed-tools: 42\n')
+        assert main([self.FLAG]) == 1
+        assert 'allowed-tools' in capsys.readouterr().out
+
+    @pytest.mark.parametrize(
+        'frontmatter',
+        [
+            'name: typed\ndescription: "42"\n',
+            "name: typed\ndescription: '42'\n",
+            'name: typed\ndescription: 1.5\n',
+            'name: typed\ndescription: 42 widgets\n',
+            'name: typed\ndescription: 42\n  and more\n',
+            'name: typed\ndescription: |\n  42\n',
+            'name: typed\ndescription: ok\nallowed-tools: Read, Grep\n',
+            'name: typed\ndescription: ok\nallowed-tools: [Read, Grep]\n',
+            'name: typed\ndescription: ok\nallowed-tools:\n  - Read\n  - Grep\n',
+        ],
+    )
+    def test_valid_shapes_pass(self, skills_repo, frontmatter):
+        write_raw_skill(skills_repo / 'skills', 'typed', frontmatter)
+        assert main([self.FLAG, '--allowed-key', 'allowed-tools']) == 0
+
+    def test_mapping_valued_description_fails(self, skills_repo):
+        write_raw_skill(skills_repo / 'skills', 'typed', 'name: typed\ndescription:\n  nested: value\n')
+        assert main([self.FLAG]) == 1
+
+    def test_only_runs_the_single_check(self, skills_repo, capsys):
+        write_raw_skill(skills_repo / 'skills', 'typed', 'name: typed\ndescription: 42\n')
+        assert main([self.FLAG, '--only', 'non_string_value']) == 1
+        assert main([self.FLAG, '--only', 'oversized_body']) == 0
+
+    def test_baseline_absorbs_then_ratchets(self, skills_repo, capsys):
+        write_raw_skill(skills_repo / 'skills', 'typed', 'name: typed\ndescription: 42\n')
+        assert main([self.FLAG, '--baseline', 'b.json', '--write-baseline']) == 0
+        written = json.loads((skills_repo / 'b.json').read_text())
+        assert written['skills/typed']['non_string_value']['magnitude'] == ['description']
+        assert main([self.FLAG, '--baseline', 'b.json']) == 0
+        write_raw_skill(skills_repo / 'skills', 'typed', 'name: typed\ndescription: 42\ncompatibility: true\n')
+        assert main([self.FLAG, '--baseline', 'b.json']) == 1
+        assert 'grew past its baselined magnitude' in capsys.readouterr().out
+
+    def test_fixed_baseline_entry_goes_stale(self, skills_repo, capsys):
+        write_raw_skill(skills_repo / 'skills', 'typed', 'name: typed\ndescription: 42\n')
+        assert main([self.FLAG, '--baseline', 'b.json', '--write-baseline']) == 0
+        write_raw_skill(skills_repo / 'skills', 'typed', 'name: typed\ndescription: fixed\n')
+        assert main([self.FLAG, '--baseline', 'b.json']) == 1
+        assert 'stale' in capsys.readouterr().out
+
+    def test_baseline_entry_left_alone_when_flag_off(self, skills_repo):
+        write_raw_skill(skills_repo / 'skills', 'typed', 'name: typed\ndescription: 42\n')
+        assert main([self.FLAG, '--baseline', 'b.json', '--write-baseline']) == 0
+        write_raw_skill(skills_repo / 'skills', 'typed', 'name: typed\ndescription: fixed\n')
+        assert main(['--baseline', 'b.json']) == 0
+
+
+def test_flag_counts_whole_file_when_fence_has_trailing_space(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    skill_dir = tmp_path / "skills" / "spaced"
+    skill_dir.mkdir(parents=True)
+    body = "".join(f"Line {i}\n" for i in range(48))
+    (skill_dir / "SKILL.md").write_text(f"---  \nname: spaced\ndescription: ok\n---  \n{body}")
+    args = ["--max-body-lines", "50", "--body-excludes-frontmatter", "--only", "oversized_body"]
+    assert main(args) == 1
+
+
+def test_comment_before_block_list_is_still_a_list(skills_repo):
+    write_raw_skill(skills_repo / 'skills', 'raw', 'name: raw\ndescription: ok\nallowed-tools:\n  # read only\n  - Read\n')
+    assert main(['--check-value-types', '--allowed-key', 'allowed-tools']) == 0
+
+
+def test_comment_after_a_number_does_not_hide_it(skills_repo):
+    write_raw_skill(skills_repo / 'skills', 'raw', 'name: raw\ndescription: 42\n  # note\n')
+    assert main(['--check-value-types']) == 1
+
+
+def test_quoted_unknown_key_is_flagged(skills_repo, capsys):
+    write_raw_skill(skills_repo / 'skills', 'raw', 'name: raw\ndescription: ok\n"descripton": oops\n')
+    assert main([]) == 1
+    assert 'unexpected key(s): descripton' in capsys.readouterr().out
+
+
+def test_dotted_unknown_key_is_flagged(skills_repo, capsys):
+    write_raw_skill(skills_repo / 'skills', 'raw', 'name: raw\ndescription: ok\nmetadata.owner: sre\n')
+    assert main([]) == 1
+    assert 'unexpected key(s): metadata.owner' in capsys.readouterr().out
+
+
+def test_quoted_known_key_counts_as_that_key(skills_repo):
+    write_raw_skill(skills_repo / 'skills', 'raw', 'name: raw\n"description": ok\n')
+    assert main([]) == 0
+
+
+def test_quoted_key_value_is_type_checked(skills_repo):
+    write_raw_skill(skills_repo / 'skills', 'raw', 'name: raw\n"description": 42\n')
+    assert main(['--check-value-types', '--only', 'non_string_value']) == 1

@@ -15,6 +15,8 @@ every stricter house rule is opt-in through a hook arg, never a module constant:
   skill that sets it also needs --allowed-key when_to_use or it fails unexpected_frontmatter.
 - --max-body-lines (default 500): Anthropic's published authoring best practice
   ("keep SKILL.md under 500 lines"). 0 disables the check.
+- --body-excludes-frontmatter: count --max-body-lines over the lines after the closing
+  frontmatter fence instead of the whole file. Off by default.
 - --required-key (default: description): the platform's only required frontmatter key
   (`name` falls back to the directory name). Repeat the flag to require more keys;
   passing it replaces the default set.
@@ -31,6 +33,13 @@ every stricter house rule is opt-in through a hook arg, never a module constant:
   "no XML tags" rule.
 - --max-compatibility-chars N: max `compatibility` length; 0 (default) disables.
   Lengths use the stripped value, so a block scalar's trailing newline does not count.
+- --check-value-types: `name`, `description` and `compatibility` must be strings and
+  `allowed-tools` a string or list. An unquoted int, true, false, null or ~, an inline
+  list, or a mapping is not a string; a float is. The builtin plugin validator only
+  catches a non-string `allowed-tools` but passes the other three. A heuristic that
+  mirrors the old validator's scalar rules, not a YAML typer: tags, anchors, hex
+  integers, values starting on the next line, comment-only values and empty values
+  are not typed.
 
 Discovery: --skills-root is a repeatable glob, default `skills` and `plugins/*/skills`,
 covering both consumer layouts. Skill directories that git ignores are skipped.
@@ -57,9 +66,11 @@ import os
 import re
 import subprocess
 import sys
+from collections.abc import Iterable
 from collections.abc import Sequence
 from dataclasses import dataclass
 from glob import glob
+from itertools import islice
 from typing import Any
 from typing import TypedDict
 
@@ -98,16 +109,14 @@ CHECKS = (
     'invalid_name',
     'description_angle_brackets',
     'oversized_compatibility',
+    'non_string_value',
 )
 # Checks whose magnitude is a list the ratchet compares as a set (growth = a new member
 # appearing, not just a longer list). missing_frontmatter and unexpected_frontmatter use bare
 # key names; invalid_value uses "key=value" pairs so a drift to a different bad value under
 # an already-baselined key still counts as growth, not just the key's continued presence.
-SET_MAGNITUDE_CHECKS = frozenset(('missing_frontmatter', 'unexpected_frontmatter', 'invalid_value', 'invalid_name'))
-# Sentinel appended to missing_frontmatter's magnitude when SKILL.md itself is absent, so that
-# state is a strict superset of (and never conflated with) "file present, required key(s) empty"
-# for the same key names - `<` and `>` can't appear in a parsed frontmatter key, so this can
-# never collide with a real key name.
+SET_MAGNITUDE_CHECKS = frozenset(('missing_frontmatter', 'unexpected_frontmatter', 'invalid_value', 'invalid_name', 'non_string_value'))
+# Marks absent SKILL.md; no real key matches.
 SKILL_MD_MISSING = '<file-missing>'
 
 Magnitude = int | list[str] | None
@@ -130,6 +139,8 @@ class Rules:
     check_name: bool = False
     no_angle_brackets: bool = False
     max_compatibility_chars: int = 0
+    body_excludes_frontmatter: bool = False
+    check_value_types: bool = False
 
     def all_allowed_keys(self) -> frozenset[str]:
         return self.allowed_keys | frozenset(self.required_keys)
@@ -160,6 +171,8 @@ class Rules:
             active.add('description_angle_brackets')
         if self.max_compatibility_chars:
             active.add('oversized_compatibility')
+        if self.check_value_types:
+            active.add('non_string_value')
         return frozenset(active)
 
 
@@ -167,6 +180,21 @@ def split_frontmatter(content: str) -> str | None:
     """Return the raw YAML frontmatter text, or None if the file has none."""
     m = re.match(r'^---\n(.*?\n)---(?:\n|$)', content, re.DOTALL)
     return m.group(1) if m else None
+
+
+BODY_FRONTMATTER = re.compile(r'^---\s*\r?\n.*?\r?\n---\s*(?:\r?\n|$)', re.DOTALL)
+
+
+def body_line_count(content: str) -> int:
+    """Lines after frontmatter; all if none."""
+    return len(BODY_FRONTMATTER.sub('', content, count=1).splitlines())
+
+
+KEY_RE = re.compile(r'^("[^"]+"|\'[^\']+\'|[A-Za-z0-9_.-]+):\s*(.*)$')
+
+
+def key_name(raw: str) -> str:
+    return raw[1:-1] if raw[0] in ('"', "'") else raw
 
 
 def parse_frontmatter_keys(fm_text: str) -> dict[str, str]:
@@ -181,18 +209,17 @@ def parse_frontmatter_keys(fm_text: str) -> dict[str, str]:
     """
     lines = fm_text.split('\n')
     keys: dict[str, str] = {}
-    key_re = re.compile(r'^([A-Za-z0-9_-]+):\s*(.*)$')
     i, n = 0, len(lines)
     while i < n:
         line = lines[i]
         if not line.strip():
             i += 1
             continue
-        m = key_re.match(line)
+        m = KEY_RE.match(line)
         if not m:
             i += 1
             continue
-        key, rest = m.group(1), m.group(2).strip()
+        key, rest = key_name(m.group(1)), m.group(2).strip()
         if rest in ('|', '>', '|-', '>-', '|+', '>+'):
             style = rest[0]
             i += 1
@@ -235,7 +262,7 @@ def parse_frontmatter_keys(fm_text: str) -> dict[str, str]:
                 # branch so indented children stay unfolded, per the module docstring.
                 i += 1
                 parts = [val]
-                while i < n and lines[i].strip() != '' and lines[i][:1].isspace() and not key_re.match(lines[i]):
+                while i < n and lines[i].strip() != '' and lines[i][:1].isspace() and not KEY_RE.match(lines[i]):
                     parts.append(lines[i].strip())
                     i += 1
                 val = ' '.join(parts)
@@ -281,6 +308,49 @@ def filter_gitignored(skill_dirs: list[str]) -> list[str]:
     return [d for d in skill_dirs if d.rstrip('/') not in ignored]
 
 
+STRING_VALUE_KEYS = ('name', 'description', 'compatibility')
+STRING_OR_LIST_KEYS = ('allowed-tools',)
+NON_STRING_SCALAR = re.compile(r'[-+]?\d+|true|false|null|~', re.IGNORECASE)
+
+
+def value_kind(rest: str, following: Iterable[str]) -> str | None:
+    next_line = next((ln for ln in following if ln.strip() and not ln.strip().startswith('#')), '')
+    wrapped = next_line[:1].isspace()
+    if not rest:
+        if not wrapped:
+            return None
+        return 'list' if next_line.lstrip().startswith('- ') else 'other'
+    if rest[0] in ('"', "'", '|', '>'):
+        return 'string'
+    if rest[0] == '[':
+        return 'list'
+    if rest[0] == '{':
+        return 'other'
+    plain = re.sub(r'\s+#.*$', '', rest)
+    # wrapped plain scalars fold to strings
+    if not wrapped and NON_STRING_SCALAR.fullmatch(plain):
+        return 'other'
+    return 'string'
+
+
+def non_string_keys(fm_text: str) -> list[str]:
+    """Keys whose YAML value has wrong type."""
+    lines = fm_text.split('\n')
+    bad = set()
+    for i, line in enumerate(lines):
+        m = KEY_RE.match(line)
+        if not m or key_name(m.group(1)) not in (*STRING_VALUE_KEYS, *STRING_OR_LIST_KEYS):
+            continue
+        key = key_name(m.group(1))
+        kind = value_kind(m.group(2).strip(), islice(lines, i + 1, None))
+        if kind is None:
+            continue
+        accepted = ('string',) if key in STRING_VALUE_KEYS else ('string', 'list')
+        if kind not in accepted:
+            bad.add(key)
+    return sorted(bad)
+
+
 def name_problems(name: str, dir_name: str) -> list[str]:
     problems = []
     if not re.fullmatch(r'[a-z0-9-]+', name):
@@ -320,14 +390,15 @@ def scan_skill_dir(skill_dir: str, rules: Rules) -> tuple[dict[str, Violation], 
     with open(skill_md, encoding='utf-8') as f:
         content = f.read().replace('\r\n', '\n').replace('\r', '\n')
 
-    line_count = len(content.splitlines())
+    fm_text = split_frontmatter(content)
+    excludes_fm = rules.body_excludes_frontmatter and fm_text is not None
+    line_count = body_line_count(content) if excludes_fm else len(content.splitlines())
     if rules.max_body_lines and line_count > rules.max_body_lines:
         violations['oversized_body'] = {
             'detail': f'{line_count} lines (budget {rules.max_body_lines})',
             'magnitude': line_count,
         }
 
-    fm_text = split_frontmatter(content)
     keys = parse_frontmatter_keys(fm_text) if fm_text is not None else {}
 
     # Present-but-empty counts as missing: `description:` with nothing after it would
@@ -369,6 +440,13 @@ def scan_skill_dir(skill_dir: str, rules: Rules) -> tuple[dict[str, Violation], 
         problems = name_problems(name, dir_name)
         if problems:
             violations['invalid_name'] = {'detail': f'name {name!r}: {", ".join(problems)}', 'magnitude': sorted(problems)}
+
+    typed_bad = non_string_keys(fm_text) if rules.check_value_types and fm_text is not None else []
+    if typed_bad:
+        violations['non_string_value'] = {
+            'detail': f'non-string value for key(s): {", ".join(typed_bad)}',
+            'magnitude': typed_bad,
+        }
 
     description = keys.get('description', '')
     if rules.no_angle_brackets and ('<' in description or '>' in description):
@@ -527,6 +605,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         help=f'max SKILL.md lines, 0 disables (default {DEFAULT_MAX_BODY_LINES}: Anthropic authoring best practice)',
     )
     parser.add_argument(
+        '--body-excludes-frontmatter',
+        action='store_true',
+        help='count --max-body-lines over the lines after the frontmatter, not the whole file',
+    )
+    parser.add_argument(
         '--max-description-chars',
         type=int,
         default=DEFAULT_MAX_DESCRIPTION_CHARS,
@@ -567,6 +650,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         metavar='N',
         help='max compatibility chars, 0 disables (default 0)',
     )
+    parser.add_argument('--check-value-types', action='store_true', help='require string name, description and compatibility')
     parser.add_argument('--only', choices=CHECKS, default=None, help='run a single check (one hook per check); default runs all')
     args = parser.parse_args(argv)
 
@@ -585,6 +669,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         check_name=args.check_name,
         no_angle_brackets=args.no_angle_brackets,
         max_compatibility_chars=args.max_compatibility_chars,
+        body_excludes_frontmatter=args.body_excludes_frontmatter,
+        check_value_types=args.check_value_types,
     )
 
     baseline: Baseline = {}

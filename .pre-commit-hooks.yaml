@@ -122,6 +122,13 @@
   language: python
   pass_filenames: false
   always_run: true
+- id: check-root-agent-docs
+  name: check-root-agent-docs
+  description: Fail when root CLAUDE.md or AGENTS.md is a symlink
+  entry: check-root-agent-docs
+  language: python
+  pass_filenames: false
+  always_run: true
 - id: check-version-bumps
   name: check-version-bumps
   description: Fail when changed plugins lack a version bump
