@@ -22,6 +22,7 @@ from python_hooks.claude_plugin_marketplace.version import parse_semver
 from python_hooks.claude_plugin_marketplace.version import write_version
 
 NEW_PLUGIN_VERSION = '0.1.0'
+META_LABEL = 'metadata.version'
 
 
 def _parse_args(description: str, argv: list | None) -> argparse.Namespace:
@@ -69,8 +70,9 @@ def plan_bumps(root: Path, base_ref: str, head_ref: str) -> tuple | None:
         base_manifest = load_plugin_json(root, name, base_ref)
         if base_manifest is not None:
             base_version = _version_of(base_manifest)
-            required[name] = bump_semver(base_version, bump) if base_version else NEW_PLUGIN_VERSION
-    return affected, required, bump_semver(base_meta, level) if level else None
+            label = f"plugin '{name}' version at {base_ref}"
+            required[name] = bump_semver(base_version, bump, label) if base_version else NEW_PLUGIN_VERSION
+    return affected, required, bump_semver(base_meta, level, META_LABEL) if level else None
 
 
 def check_main(argv: list | None = None) -> int:
@@ -92,10 +94,10 @@ def check_main(argv: list | None = None) -> int:
             if manifest is None:
                 continue
             current = _version_of(manifest)
-            if current is None or parse_semver(current) < parse_semver(required):
+            if current is None or parse_semver(current, f"plugin '{name}' version") < parse_semver(required):
                 errors.append(f"  plugin '{name}' is {current}, needs at least {required}")
         current_meta = (head_data.get('metadata') or {}).get('version')
-        if required_meta and (current_meta is None or parse_semver(current_meta) < parse_semver(required_meta)):
+        if required_meta and (current_meta is None or parse_semver(current_meta, META_LABEL) < parse_semver(required_meta)):
             errors.append(f'  metadata.version is {current_meta}, needs at least {required_meta}')
     except (RuntimeError, ValueError) as exc:
         return _fail(exc)
@@ -126,7 +128,7 @@ def compute_main(argv: list | None = None) -> int:
             if not path.is_file():
                 continue
             current = _version_of(load_plugin_json(root, name))
-            new_version = higher_version(required, current)
+            new_version = higher_version(required, current, f"plugin '{name}' version")
             if write_version(path, new_version):
                 print(f'{manifest_rel(name)}: {current} -> {new_version}')
 
@@ -139,7 +141,7 @@ def compute_main(argv: list | None = None) -> int:
             print(f'error: {MARKETPLACE_PATH} has no metadata object', file=sys.stderr)
             return 1
         current_meta = data['metadata'].get('version')
-        new_meta = higher_version(required_meta, current_meta)
+        new_meta = higher_version(required_meta, current_meta, META_LABEL)
         if write_version(marketplace, new_meta, 'metadata'):
             print(f'{MARKETPLACE_PATH}: {current_meta} -> {new_meta}')
     except (RuntimeError, ValueError) as exc:

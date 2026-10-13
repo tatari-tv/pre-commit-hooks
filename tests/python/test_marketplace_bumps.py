@@ -309,3 +309,27 @@ def test_malformed_manifest_is_an_error_not_a_skip(repo, capsys):
     _commit(repo)
     assert bumps.check_main(['main']) == 2
     assert 'not a valid JSON' in capsys.readouterr().err
+
+
+def _head_with_touch(repo, version_text=None, market=None):
+    _touch(repo, 'alpha')
+    if version_text is not None:
+        _write(repo, 'plugins/alpha/.claude-plugin/plugin.json', version_text)
+    if market is not None:
+        _write(repo, '.claude-plugin/marketplace.json', market)
+    _commit(repo)
+
+
+@pytest.mark.parametrize('version', ['1.0.0-rc1', 'v1.0.0', '1.0.0+build', '².0.0'])
+def test_unsupported_version_error_names_the_plugin(repo, capsys, version):
+    _head_with_touch(repo, _manifest('alpha', version), _marketplace('1.0.1', ['alpha', 'beta']))
+    assert bumps.check_main(['main']) == 2
+    err = capsys.readouterr().err
+    assert 'alpha' in err
+    assert version in err
+
+
+def test_unsupported_marketplace_version_error_names_metadata(repo, capsys):
+    _head_with_touch(repo, market=_marketplace('1.0', ['alpha', 'beta']))
+    assert bumps.check_main(['main']) == 2
+    assert 'metadata.version' in capsys.readouterr().err

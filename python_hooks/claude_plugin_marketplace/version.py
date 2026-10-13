@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 from pathlib import Path
 
 from python_hooks.claude_plugin_marketplace._common import PLUGINS_DIR
 
 BUMP_ORDER = ['patch', 'minor', 'major']
+SEMVER = re.compile(r'(\d+)\.(\d+)\.(\d+)', re.ASCII)
 
 
 def manifest_rel(name: str) -> str:
@@ -38,19 +40,19 @@ def load_plugin_json(root: Path, name: str, rev: str | None = None) -> dict | No
     return data
 
 
-def parse_semver(version: str) -> tuple:
-    parts = str(version).split('.')
-    if len(parts) != 3 or not all(p.isdigit() for p in parts):
-        raise ValueError(f'invalid semver: {version}')
-    return tuple(int(p) for p in parts)
+def parse_semver(version: str, label: str = 'version') -> tuple:
+    match = SEMVER.fullmatch(str(version))
+    if not match:
+        raise ValueError(f'{label} {version!r} is not X.Y.Z (pre-release and build suffixes are unsupported)')
+    return tuple(int(p) for p in match.groups())
 
 
 def max_bump(a: str | None, b: str | None) -> str | None:
     return max(filter(None, (a, b)), key=BUMP_ORDER.index, default=None)
 
 
-def bump_semver(version: str, bump: str) -> str:
-    major, minor, patch = parse_semver(version)
+def bump_semver(version: str, bump: str, label: str = 'version') -> str:
+    major, minor, patch = parse_semver(version, label)
     if bump == 'major':
         return f'{major + 1}.0.0'
     if bump == 'minor':
@@ -58,8 +60,8 @@ def bump_semver(version: str, bump: str) -> str:
     return f'{major}.{minor}.{patch + 1}'
 
 
-def higher_version(required: str, current: str | None) -> str:
-    if current is None or parse_semver(current) < parse_semver(required):
+def higher_version(required: str, current: str | None, label: str = 'version') -> str:
+    if current is None or parse_semver(current, label) < parse_semver(required):
         return required
     return current
 
