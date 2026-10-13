@@ -32,16 +32,13 @@ def _check_manifest(plugin_dir: Path, errors: list) -> None:
 def _ignored(parent: Path, names: list) -> set:
     if not names:
         return set()
-    try:
-        result = subprocess.run(
-            ['git', 'check-ignore', '--stdin'],
-            cwd=parent,
-            input='\n'.join(f'{n}/' for n in names),
-            capture_output=True,
-            text=True,
-        )
-    except OSError:
-        return set()
+    result = subprocess.run(
+        ['git', 'check-ignore', '--stdin'],
+        cwd=parent,
+        input='\n'.join(f'{n}/' for n in names),
+        capture_output=True,
+        text=True,
+    )
     return {line.rstrip('/') for line in result.stdout.splitlines()}
 
 

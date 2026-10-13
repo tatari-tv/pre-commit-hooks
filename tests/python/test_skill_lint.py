@@ -597,30 +597,25 @@ class TestBodyExcludesFrontmatter:
 class TestValueTypes:
     FLAG = '--check-value-types'
 
-    def raw(self, root, frontmatter, name='typed'):
-        skill_dir = root / 'skills' / name
-        skill_dir.mkdir(parents=True)
-        (skill_dir / 'SKILL.md').write_text(f'---\n{frontmatter}---\n\nbody\n')
-
     def test_off_by_default(self, skills_repo):
-        self.raw(skills_repo, 'name: typed\ndescription: 42\n')
+        write_raw_skill(skills_repo / 'skills', 'typed', 'name: typed\ndescription: 42\n')
         assert main([]) == 0
 
     @pytest.mark.parametrize('value', ['42', '-7', 'true', 'false', 'null', '~', '[a, b]'])
     def test_non_string_description_fails(self, skills_repo, capsys, value):
-        self.raw(skills_repo, f'name: typed\ndescription: {value}\n')
+        write_raw_skill(skills_repo / 'skills', 'typed', f'name: typed\ndescription: {value}\n')
         assert main([self.FLAG]) == 1
         out = capsys.readouterr().out
         assert 'skills/typed: non_string_value' in out
         assert 'description' in out
 
     def test_each_string_key_is_checked(self, skills_repo, capsys):
-        self.raw(skills_repo, 'name: 42\ndescription: ok\ncompatibility: true\n')
+        write_raw_skill(skills_repo / 'skills', 'typed', 'name: 42\ndescription: ok\ncompatibility: true\n')
         assert main([self.FLAG]) == 1
         assert 'compatibility, name' in capsys.readouterr().out
 
     def test_allowed_tools_number_fails(self, skills_repo, capsys):
-        self.raw(skills_repo, 'name: typed\ndescription: ok\nallowed-tools: 42\n')
+        write_raw_skill(skills_repo / 'skills', 'typed', 'name: typed\ndescription: ok\nallowed-tools: 42\n')
         assert main([self.FLAG]) == 1
         assert 'allowed-tools' in capsys.readouterr().out
 
@@ -639,42 +634,39 @@ class TestValueTypes:
         ],
     )
     def test_valid_shapes_pass(self, skills_repo, frontmatter):
-        self.raw(skills_repo, frontmatter)
+        write_raw_skill(skills_repo / 'skills', 'typed', frontmatter)
         assert main([self.FLAG, '--allowed-key', 'allowed-tools']) == 0
 
     def test_mapping_valued_description_fails(self, skills_repo):
-        self.raw(skills_repo, 'name: typed\ndescription:\n  nested: value\n')
+        write_raw_skill(skills_repo / 'skills', 'typed', 'name: typed\ndescription:\n  nested: value\n')
         assert main([self.FLAG]) == 1
 
     def test_only_runs_the_single_check(self, skills_repo, capsys):
-        self.raw(skills_repo, 'name: typed\ndescription: 42\n')
+        write_raw_skill(skills_repo / 'skills', 'typed', 'name: typed\ndescription: 42\n')
         assert main([self.FLAG, '--only', 'non_string_value']) == 1
         assert main([self.FLAG, '--only', 'oversized_body']) == 0
 
     def test_baseline_absorbs_then_ratchets(self, skills_repo, capsys):
-        self.raw(skills_repo, 'name: typed\ndescription: 42\n')
+        write_raw_skill(skills_repo / 'skills', 'typed', 'name: typed\ndescription: 42\n')
         assert main([self.FLAG, '--baseline', 'b.json', '--write-baseline']) == 0
         written = json.loads((skills_repo / 'b.json').read_text())
         assert written['skills/typed']['non_string_value']['magnitude'] == ['description']
         assert main([self.FLAG, '--baseline', 'b.json']) == 0
-        self.raw_rewrite(skills_repo, 'name: typed\ndescription: 42\ncompatibility: true\n')
+        write_raw_skill(skills_repo / 'skills', 'typed', 'name: typed\ndescription: 42\ncompatibility: true\n')
         assert main([self.FLAG, '--baseline', 'b.json']) == 1
         assert 'grew past its baselined magnitude' in capsys.readouterr().out
 
-    def raw_rewrite(self, root, frontmatter):
-        (root / 'skills' / 'typed' / 'SKILL.md').write_text(f'---\n{frontmatter}---\n\nbody\n')
-
     def test_fixed_baseline_entry_goes_stale(self, skills_repo, capsys):
-        self.raw(skills_repo, 'name: typed\ndescription: 42\n')
+        write_raw_skill(skills_repo / 'skills', 'typed', 'name: typed\ndescription: 42\n')
         assert main([self.FLAG, '--baseline', 'b.json', '--write-baseline']) == 0
-        self.raw_rewrite(skills_repo, 'name: typed\ndescription: fixed\n')
+        write_raw_skill(skills_repo / 'skills', 'typed', 'name: typed\ndescription: fixed\n')
         assert main([self.FLAG, '--baseline', 'b.json']) == 1
         assert 'stale' in capsys.readouterr().out
 
     def test_baseline_entry_left_alone_when_flag_off(self, skills_repo):
-        self.raw(skills_repo, 'name: typed\ndescription: 42\n')
+        write_raw_skill(skills_repo / 'skills', 'typed', 'name: typed\ndescription: 42\n')
         assert main([self.FLAG, '--baseline', 'b.json', '--write-baseline']) == 0
-        self.raw_rewrite(skills_repo, 'name: typed\ndescription: fixed\n')
+        write_raw_skill(skills_repo / 'skills', 'typed', 'name: typed\ndescription: fixed\n')
         assert main(['--baseline', 'b.json']) == 0
 
 
@@ -688,39 +680,33 @@ def test_flag_counts_whole_file_when_fence_has_trailing_space(tmp_path, monkeypa
     assert main(args) == 1
 
 
-def _raw_skill(root, frontmatter):
-    skill_dir = root / 'skills' / 'raw'
-    skill_dir.mkdir(parents=True)
-    (skill_dir / 'SKILL.md').write_text(f'---\n{frontmatter}---\n\nbody\n')
-
-
 def test_comment_before_block_list_is_still_a_list(skills_repo):
-    _raw_skill(skills_repo, 'name: raw\ndescription: ok\nallowed-tools:\n  # read only\n  - Read\n')
+    write_raw_skill(skills_repo / 'skills', 'raw', 'name: raw\ndescription: ok\nallowed-tools:\n  # read only\n  - Read\n')
     assert main(['--check-value-types', '--allowed-key', 'allowed-tools']) == 0
 
 
 def test_comment_after_a_number_does_not_hide_it(skills_repo):
-    _raw_skill(skills_repo, 'name: raw\ndescription: 42\n  # note\n')
+    write_raw_skill(skills_repo / 'skills', 'raw', 'name: raw\ndescription: 42\n  # note\n')
     assert main(['--check-value-types']) == 1
 
 
 def test_quoted_unknown_key_is_flagged(skills_repo, capsys):
-    _raw_skill(skills_repo, 'name: raw\ndescription: ok\n"descripton": oops\n')
+    write_raw_skill(skills_repo / 'skills', 'raw', 'name: raw\ndescription: ok\n"descripton": oops\n')
     assert main([]) == 1
     assert 'unexpected key(s): descripton' in capsys.readouterr().out
 
 
 def test_dotted_unknown_key_is_flagged(skills_repo, capsys):
-    _raw_skill(skills_repo, 'name: raw\ndescription: ok\nmetadata.owner: sre\n')
+    write_raw_skill(skills_repo / 'skills', 'raw', 'name: raw\ndescription: ok\nmetadata.owner: sre\n')
     assert main([]) == 1
     assert 'unexpected key(s): metadata.owner' in capsys.readouterr().out
 
 
 def test_quoted_known_key_counts_as_that_key(skills_repo):
-    _raw_skill(skills_repo, 'name: raw\n"description": ok\n')
+    write_raw_skill(skills_repo / 'skills', 'raw', 'name: raw\n"description": ok\n')
     assert main([]) == 0
 
 
 def test_quoted_key_value_is_type_checked(skills_repo):
-    _raw_skill(skills_repo, 'name: raw\n"description": 42\n')
+    write_raw_skill(skills_repo / 'skills', 'raw', 'name: raw\n"description": 42\n')
     assert main(['--check-value-types', '--only', 'non_string_value']) == 1
