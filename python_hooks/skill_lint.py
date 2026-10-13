@@ -36,7 +36,10 @@ every stricter house rule is opt-in through a hook arg, never a module constant:
 - --check-value-types: `name`, `description` and `compatibility` must be strings and
   `allowed-tools` a string or list. An unquoted int, true, false, null or ~, an inline
   list, or a mapping is not a string; a float is. The builtin plugin validator only
-  catches a non-string `allowed-tools` but passes the other three.
+  catches a non-string `allowed-tools` but passes the other three. A heuristic that
+  mirrors the old validator's scalar rules, not a YAML typer: tags, anchors, hex
+  integers, values starting on the next line, comment-only values and empty values
+  are not typed.
 
 Discovery: --skills-root is a repeatable glob, default `skills` and `plugins/*/skills`,
 covering both consumer layouts. Skill directories that git ignores are skipped.
@@ -113,10 +116,7 @@ CHECKS = (
 # key names; invalid_value uses "key=value" pairs so a drift to a different bad value under
 # an already-baselined key still counts as growth, not just the key's continued presence.
 SET_MAGNITUDE_CHECKS = frozenset(('missing_frontmatter', 'unexpected_frontmatter', 'invalid_value', 'invalid_name', 'non_string_value'))
-# Sentinel appended to missing_frontmatter's magnitude when SKILL.md itself is absent, so that
-# state is a strict superset of (and never conflated with) "file present, required key(s) empty"
-# for the same key names - `<` and `>` can't appear in a parsed frontmatter key, so this can
-# never collide with a real key name.
+# Marks absent SKILL.md; no real key matches.
 SKILL_MD_MISSING = '<file-missing>'
 
 Magnitude = int | list[str] | None

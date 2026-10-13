@@ -74,8 +74,8 @@ Example:
 - `check-claude-plugin-names` fails on a plugin directory that does not match its `plugin.json` name, and on any symlink at or under `plugins/<name>/skills`, at any depth.
 - `check-root-agent-docs` fails when the root `CLAUDE.md` or `AGENTS.md` is a symlink. A missing file is not checked.
 - `skill-lint --body-excludes-frontmatter` counts `--max-body-lines` over the lines after the frontmatter instead of the whole file.
-- `skill-lint --check-value-types` requires string `name`, `description` and `compatibility`, and a string or list `allowed-tools`. An unquoted integer, boolean or null fails; a quoted value or a float reads as a string, as in the old validator.
-- `skill-lint` resolves `--skills-root` globs from the current directory, while the marketplace hooks resolve from the git root. Quoted and dotted frontmatter keys count as keys, so a misspelled one fails `unexpected_frontmatter`.
+- `skill-lint --check-value-types` requires string `name`, `description` and `compatibility`, and a string or list `allowed-tools`. An unquoted decimal integer, boolean, `null` or `~` on the key's line fails; a quoted value or a float reads as a string, as in the old validator. This is a heuristic, not a YAML typer: tags, anchors, hex integers, values starting on the next line, comment-only values and empty values are not typed.
+- `skill-lint` resolves `--skills-root` globs from the current directory, while the marketplace hooks resolve from the git root. Plain, quoted and dotted frontmatter keys count as keys, so a misspelled one fails `unexpected_frontmatter`; an empty quoted key is not read.
 
 ### Plugin version bumps
 
