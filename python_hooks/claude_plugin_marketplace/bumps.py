@@ -123,27 +123,28 @@ def compute_main(argv: list | None = None) -> int:
         if not affected:
             return 0
 
+        writes: list = []
         for name, required in sorted(required_versions.items()):
             path = root / manifest_rel(name)
             if not path.is_file():
                 continue
             current = _version_of(load_plugin_json(root, name))
-            new_version = higher_version(required, current, f"plugin '{name}' version")
-            if write_version(path, new_version):
-                print(f'{manifest_rel(name)}: {current} -> {new_version}')
+            writes.append((path, higher_version(required, current, f"plugin '{name}' version"), None, current))
 
         marketplace = root / MARKETPLACE_PATH
         if not marketplace.is_file():
             print(f'error: {MARKETPLACE_PATH} not found', file=sys.stderr)
             return 1
         data = json.loads(marketplace.read_text(encoding='utf-8'))
-        if not isinstance(data.get('metadata'), dict) or required_meta is None:
+        if not isinstance(data.get('metadata'), dict):
             print(f'error: {MARKETPLACE_PATH} has no metadata object', file=sys.stderr)
             return 1
         current_meta = data['metadata'].get('version')
-        new_meta = higher_version(required_meta, current_meta, META_LABEL)
-        if write_version(marketplace, new_meta, 'metadata'):
-            print(f'{MARKETPLACE_PATH}: {current_meta} -> {new_meta}')
+        writes.append((marketplace, higher_version(required_meta, current_meta, META_LABEL), 'metadata', current_meta))
+
+        for path, new_version, container, current in writes:
+            if write_version(path, new_version, container):
+                print(f'{path.relative_to(root)}: {current} -> {new_version}')
     except (RuntimeError, ValueError) as exc:
         return _fail(exc)
     return 0

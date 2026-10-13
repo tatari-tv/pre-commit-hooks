@@ -329,6 +329,31 @@ def test_unsupported_version_error_names_the_plugin(repo, capsys, version):
     assert version in err
 
 
+def _plugin_bytes(repo):
+    return (repo / 'plugins/alpha/.claude-plugin/plugin.json').read_bytes()
+
+
+@pytest.mark.parametrize(
+    ('market', 'code'),
+    [
+        (None, 1),
+        (json.dumps({'name': 'demo', 'plugins': []}) + '\n', 1),
+        (_marketplace('1.0', ['alpha', 'beta']), 2),
+    ],
+    ids=['missing', 'no-metadata', 'bad-metadata-version'],
+)
+def test_compute_writes_nothing_when_marketplace_is_unusable(repo, market, code):
+    _head_with_touch(repo)
+    before = _plugin_bytes(repo)
+    marketplace = repo / '.claude-plugin/marketplace.json'
+    if market is None:
+        marketplace.unlink()
+    else:
+        marketplace.write_text(market, encoding='utf-8')
+    assert bumps.compute_main(['main']) == code
+    assert _plugin_bytes(repo) == before
+
+
 def test_unsupported_marketplace_version_error_names_metadata(repo, capsys):
     _head_with_touch(repo, market=_marketplace('1.0', ['alpha', 'beta']))
     assert bumps.check_main(['main']) == 2
