@@ -382,14 +382,15 @@ def scan_skill_dir(skill_dir: str, rules: Rules) -> tuple[dict[str, Violation], 
     with open(skill_md, encoding='utf-8') as f:
         content = f.read().replace('\r\n', '\n').replace('\r', '\n')
 
-    line_count = body_line_count(content) if rules.body_excludes_frontmatter else len(content.splitlines())
+    fm_text = split_frontmatter(content)
+    excludes_fm = rules.body_excludes_frontmatter and fm_text is not None
+    line_count = body_line_count(content) if excludes_fm else len(content.splitlines())
     if rules.max_body_lines and line_count > rules.max_body_lines:
         violations['oversized_body'] = {
             'detail': f'{line_count} lines (budget {rules.max_body_lines})',
             'magnitude': line_count,
         }
 
-    fm_text = split_frontmatter(content)
     keys = parse_frontmatter_keys(fm_text) if fm_text is not None else {}
 
     # Present-but-empty counts as missing: `description:` with nothing after it would

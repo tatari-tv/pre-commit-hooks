@@ -676,3 +676,13 @@ class TestValueTypes:
         assert main([self.FLAG, '--baseline', 'b.json', '--write-baseline']) == 0
         self.raw_rewrite(skills_repo, 'name: typed\ndescription: fixed\n')
         assert main(['--baseline', 'b.json']) == 0
+
+
+def test_flag_counts_whole_file_when_fence_has_trailing_space(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    skill_dir = tmp_path / "skills" / "spaced"
+    skill_dir.mkdir(parents=True)
+    body = "".join(f"Line {i}\n" for i in range(48))
+    (skill_dir / "SKILL.md").write_text(f"---  \nname: spaced\ndescription: ok\n---  \n{body}")
+    args = ["--max-body-lines", "50", "--body-excludes-frontmatter", "--only", "oversized_body"]
+    assert main(args) == 1
