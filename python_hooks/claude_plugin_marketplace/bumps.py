@@ -23,6 +23,7 @@ from python_hooks.claude_plugin_marketplace.version import write_version
 
 NEW_PLUGIN_VERSION = '0.1.0'
 META_LABEL = 'metadata.version'
+UVX_SOURCE = 'git+https://github.com/tatari-tv/pre-commit-hooks@<rev>'
 
 
 def _parse_args(description: str, argv: list | None) -> argparse.Namespace:
@@ -80,7 +81,10 @@ def check_main(argv: list | None = None) -> int:
     root = repo_root()
     try:
         plan = plan_bumps(root, args.base_ref, args.head_ref)
-        if plan is None or not plan[0]:
+        if plan is None:
+            print(f'note: {MARKETPLACE_PATH} not found at {args.base_ref}; skipping check', file=sys.stderr)
+            return 0
+        if not plan[0]:
             return 0
         _, required_versions, required_meta = plan
         head_data = load_marketplace_at(root, args.head_ref)
@@ -106,7 +110,7 @@ def check_main(argv: list | None = None) -> int:
         print('Version bump required:', file=sys.stderr)
         for error in errors:
             print(error, file=sys.stderr)
-        print(f'\nRun: compute-version-bump {args.base_ref}', file=sys.stderr)
+        print(f'\nRun: uvx --from {UVX_SOURCE} compute-version-bump {args.base_ref}', file=sys.stderr)
         return 1
     return 0
 

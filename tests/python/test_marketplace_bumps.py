@@ -329,6 +329,23 @@ def test_unsupported_version_error_names_the_plugin(repo, capsys, version):
     assert version in err
 
 
+def test_missing_base_marketplace_check_prints_a_note(repo, capsys):
+    _git(repo, 'checkout', '-q', 'main')
+    _git(repo, 'rm', '-q', '.claude-plugin/marketplace.json')
+    _commit(repo, 'drop marketplace')
+    _git(repo, 'checkout', '-q', '-b', 'topic')
+    _head_with_touch(repo)
+    assert bumps.check_main(['main']) == 0
+    assert 'not found at main' in capsys.readouterr().err
+
+
+def test_failure_hint_names_the_uvx_command(repo, capsys):
+    _touch(repo, 'alpha')
+    _commit(repo)
+    assert bumps.check_main(['main']) == 1
+    assert 'uvx --from git+https://github.com/tatari-tv/pre-commit-hooks' in capsys.readouterr().err
+
+
 def _plugin_bytes(repo):
     return (repo / 'plugins/alpha/.claude-plugin/plugin.json').read_bytes()
 
