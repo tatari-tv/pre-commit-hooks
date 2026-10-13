@@ -30,6 +30,8 @@ check-claude-plugin-marketplace = "python_hooks.claude_plugin_marketplace.market
 no-em-dashes = "python_hooks.claude_plugin_marketplace.dashes:main"
 check-md-anchors = "python_hooks.claude_plugin_marketplace.anchors:main"
 check-claude-plugin-closure = "python_hooks.claude_plugin_marketplace.closure:main"
+check-version-bumps = "python_hooks.claude_plugin_marketplace.bumps:check_main"
+compute-version-bump = "python_hooks.claude_plugin_marketplace.bumps:compute_main"
 
 [dependency-groups]
 dev = [
