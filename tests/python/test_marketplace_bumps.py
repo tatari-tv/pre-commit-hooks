@@ -371,6 +371,54 @@ def test_compute_does_not_write_through_a_symlinked_manifest(repo, tmp_path_fact
     assert 'symlink' in capsys.readouterr().err
 
 
+def test_base_marketplace_without_metadata_version_is_an_error(repo, capsys):
+    _git(repo, 'checkout', '-q', 'main')
+    _write(repo, '.claude-plugin/marketplace.json', json.dumps({'name': 'demo', 'metadata': {}, 'plugins': []}) + '\n')
+    _commit(repo, 'drop meta version')
+    _git(repo, 'checkout', '-q', '-b', 'topic')
+    _head_with_touch(repo)
+    assert bumps.check_main(['main']) == 2
+    assert 'metadata.version' in capsys.readouterr().err
+
+
+def test_check_fails_when_head_marketplace_is_missing(repo, capsys):
+    _touch(repo, 'alpha')
+    _git(repo, 'rm', '-q', '.claude-plugin/marketplace.json')
+    _commit(repo)
+    assert bumps.check_main(['main']) == 1
+    assert 'not found' in capsys.readouterr().err
+
+
+def test_nonexistent_base_ref_is_an_error(repo):
+    assert bumps.check_main(['no-such-ref']) == 2
+    assert bumps.compute_main(['no-such-ref']) == 2
+
+
+def test_compute_normalises_manifest_to_two_space_indent_and_keeps_unicode(repo):
+    raw = '{\n    "name": "alpha",\n    "description": "café",\n    "version": "0.1.0"\n}'
+    _head_with_touch(repo, raw)
+    assert bumps.compute_main(['main']) == 0
+    expected = {'name': 'alpha', 'description': 'café', 'version': '0.1.1'}
+    assert _plugin_bytes(repo) == (json.dumps(expected, indent=2, ensure_ascii=False) + '\n').encode()
+
+
+def test_version_only_manifest_edit_passes_check_and_compute_is_a_noop(repo):
+    _write(repo, 'plugins/alpha/.claude-plugin/plugin.json', _manifest('alpha', '0.5.0'))
+    _commit(repo)
+    before = _plugin_bytes(repo)
+    assert bumps.check_main(['main']) == 0
+    assert bumps.compute_main(['main']) == 0
+    assert _plugin_bytes(repo) == before
+    assert _meta(repo) == '1.0.0'
+
+
+def test_version_only_manifest_edit_with_another_change_is_still_affected(repo):
+    _head_with_touch(repo, _manifest('alpha', '0.5.0'))
+    assert bumps.check_main(['main']) == 1
+    assert bumps.compute_main(['main']) == 0
+    assert (_version(repo, 'alpha'), _meta(repo)) == ('0.5.0', '1.0.1')
+
+
 def test_failure_hint_names_the_uvx_command(repo, capsys):
     _touch(repo, 'alpha')
     _commit(repo)
