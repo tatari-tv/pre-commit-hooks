@@ -63,9 +63,11 @@ import os
 import re
 import subprocess
 import sys
+from collections.abc import Iterable
 from collections.abc import Sequence
 from dataclasses import dataclass
 from glob import glob
+from itertools import islice
 from typing import Any
 from typing import TypedDict
 
@@ -188,6 +190,13 @@ def body_line_count(content: str) -> int:
     return len(BODY_FRONTMATTER.sub('', content, count=1).splitlines())
 
 
+KEY_RE = re.compile(r'^("[^"]+"|\'[^\']+\'|[A-Za-z0-9_.-]+):\s*(.*)$')
+
+
+def key_name(raw: str) -> str:
+    return raw[1:-1] if raw[0] in ('"', "'") else raw
+
+
 def parse_frontmatter_keys(fm_text: str) -> dict[str, str]:
     """Minimal frontmatter reader: {key: value} for top-level scalar and block-scalar keys.
 
@@ -200,18 +209,17 @@ def parse_frontmatter_keys(fm_text: str) -> dict[str, str]:
     """
     lines = fm_text.split('\n')
     keys: dict[str, str] = {}
-    key_re = re.compile(r'^([A-Za-z0-9_-]+):\s*(.*)$')
     i, n = 0, len(lines)
     while i < n:
         line = lines[i]
         if not line.strip():
             i += 1
             continue
-        m = key_re.match(line)
+        m = KEY_RE.match(line)
         if not m:
             i += 1
             continue
-        key, rest = m.group(1), m.group(2).strip()
+        key, rest = key_name(m.group(1)), m.group(2).strip()
         if rest in ('|', '>', '|-', '>-', '|+', '>+'):
             style = rest[0]
             i += 1
@@ -254,7 +262,7 @@ def parse_frontmatter_keys(fm_text: str) -> dict[str, str]:
                 # branch so indented children stay unfolded, per the module docstring.
                 i += 1
                 parts = [val]
-                while i < n and lines[i].strip() != '' and lines[i][:1].isspace() and not key_re.match(lines[i]):
+                while i < n and lines[i].strip() != '' and lines[i][:1].isspace() and not KEY_RE.match(lines[i]):
                     parts.append(lines[i].strip())
                     i += 1
                 val = ' '.join(parts)
@@ -305,8 +313,9 @@ STRING_OR_LIST_KEYS = ('allowed-tools',)
 NON_STRING_SCALAR = re.compile(r'[-+]?\d+|true|false|null|~', re.IGNORECASE)
 
 
-def value_kind(rest: str, next_line: str) -> str | None:
-    wrapped = next_line.strip() != '' and next_line[:1].isspace()
+def value_kind(rest: str, following: Iterable[str]) -> str | None:
+    next_line = next((ln for ln in following if ln.strip() and not ln.strip().startswith('#')), '')
+    wrapped = next_line[:1].isspace()
     if not rest:
         if not wrapped:
             return None
@@ -327,14 +336,13 @@ def value_kind(rest: str, next_line: str) -> str | None:
 def non_string_keys(fm_text: str) -> list[str]:
     """Keys whose YAML value has wrong type."""
     lines = fm_text.split('\n')
-    key_re = re.compile(r'^([A-Za-z0-9_-]+):\s*(.*)$')
     bad = set()
     for i, line in enumerate(lines):
-        m = key_re.match(line)
-        if not m or m.group(1) not in (*STRING_VALUE_KEYS, *STRING_OR_LIST_KEYS):
+        m = KEY_RE.match(line)
+        if not m or key_name(m.group(1)) not in (*STRING_VALUE_KEYS, *STRING_OR_LIST_KEYS):
             continue
-        key = m.group(1)
-        kind = value_kind(m.group(2).strip(), lines[i + 1] if i + 1 < len(lines) else '')
+        key = key_name(m.group(1))
+        kind = value_kind(m.group(2).strip(), islice(lines, i + 1, None))
         if kind is None:
             continue
         accepted = ('string',) if key in STRING_VALUE_KEYS else ('string', 'list')

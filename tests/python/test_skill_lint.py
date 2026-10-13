@@ -686,3 +686,41 @@ def test_flag_counts_whole_file_when_fence_has_trailing_space(tmp_path, monkeypa
     (skill_dir / "SKILL.md").write_text(f"---  \nname: spaced\ndescription: ok\n---  \n{body}")
     args = ["--max-body-lines", "50", "--body-excludes-frontmatter", "--only", "oversized_body"]
     assert main(args) == 1
+
+
+def _raw_skill(root, frontmatter):
+    skill_dir = root / 'skills' / 'raw'
+    skill_dir.mkdir(parents=True)
+    (skill_dir / 'SKILL.md').write_text(f'---\n{frontmatter}---\n\nbody\n')
+
+
+def test_comment_before_block_list_is_still_a_list(skills_repo):
+    _raw_skill(skills_repo, 'name: raw\ndescription: ok\nallowed-tools:\n  # read only\n  - Read\n')
+    assert main(['--check-value-types', '--allowed-key', 'allowed-tools']) == 0
+
+
+def test_comment_after_a_number_does_not_hide_it(skills_repo):
+    _raw_skill(skills_repo, 'name: raw\ndescription: 42\n  # note\n')
+    assert main(['--check-value-types']) == 1
+
+
+def test_quoted_unknown_key_is_flagged(skills_repo, capsys):
+    _raw_skill(skills_repo, 'name: raw\ndescription: ok\n"descripton": oops\n')
+    assert main([]) == 1
+    assert 'unexpected key(s): descripton' in capsys.readouterr().out
+
+
+def test_dotted_unknown_key_is_flagged(skills_repo, capsys):
+    _raw_skill(skills_repo, 'name: raw\ndescription: ok\nmetadata.owner: sre\n')
+    assert main([]) == 1
+    assert 'unexpected key(s): metadata.owner' in capsys.readouterr().out
+
+
+def test_quoted_known_key_counts_as_that_key(skills_repo):
+    _raw_skill(skills_repo, 'name: raw\n"description": ok\n')
+    assert main([]) == 0
+
+
+def test_quoted_key_value_is_type_checked(skills_repo):
+    _raw_skill(skills_repo, 'name: raw\n"description": 42\n')
+    assert main(['--check-value-types', '--only', 'non_string_value']) == 1
