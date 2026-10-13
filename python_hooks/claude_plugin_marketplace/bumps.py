@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -39,6 +40,11 @@ def _fail(exc: Exception) -> int:
     if 'no merge base' in message:
         print('fetch full history (fetch-depth: 0)', file=sys.stderr)
     return 2
+
+
+def _require_inside(root: Path, path: Path) -> None:
+    if path.is_symlink() or not path.resolve().is_relative_to(root.resolve()):
+        raise ValueError(f'{path.relative_to(root)} is a symlink or leaves the repo; refusing to write')
 
 
 def _version_of(data: dict | None) -> str | None:
@@ -103,7 +109,7 @@ def check_main(argv: list | None = None) -> int:
         current_meta = (head_data.get('metadata') or {}).get('version')
         if required_meta and (current_meta is None or parse_semver(current_meta, META_LABEL) < parse_semver(required_meta)):
             errors.append(f'  metadata.version is {current_meta}, needs at least {required_meta}')
-    except (RuntimeError, ValueError) as exc:
+    except (RuntimeError, ValueError, subprocess.TimeoutExpired) as exc:
         return _fail(exc)
 
     if errors:
@@ -132,6 +138,7 @@ def compute_main(argv: list | None = None) -> int:
             path = root / manifest_rel(name)
             if not path.is_file():
                 continue
+            _require_inside(root, path)
             current = _version_of(load_plugin_json(root, name))
             writes.append((path, higher_version(required, current, f"plugin '{name}' version"), None, current))
 
@@ -139,6 +146,7 @@ def compute_main(argv: list | None = None) -> int:
         if not marketplace.is_file():
             print(f'error: {MARKETPLACE_PATH} not found', file=sys.stderr)
             return 1
+        _require_inside(root, marketplace)
         data = json.loads(marketplace.read_text(encoding='utf-8'))
         if not isinstance(data.get('metadata'), dict):
             print(f'error: {MARKETPLACE_PATH} has no metadata object', file=sys.stderr)
@@ -149,6 +157,6 @@ def compute_main(argv: list | None = None) -> int:
         for path, new_version, container, current in writes:
             if write_version(path, new_version, container):
                 print(f'{path.relative_to(root)}: {current} -> {new_version}')
-    except (RuntimeError, ValueError) as exc:
+    except (RuntimeError, ValueError, subprocess.TimeoutExpired) as exc:
         return _fail(exc)
     return 0

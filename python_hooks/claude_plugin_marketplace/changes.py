@@ -6,6 +6,7 @@ from pathlib import Path
 from pathlib import PurePosixPath
 
 from python_hooks.claude_plugin_marketplace._common import PLUGINS_DIR
+from python_hooks.claude_plugin_marketplace.version import GIT_TIMEOUT
 from python_hooks.claude_plugin_marketplace.version import load_plugin_json
 
 MARKETPLACE_PATH = '.claude-plugin/marketplace.json'
@@ -14,10 +15,20 @@ MANIFEST_PARTS = ('.claude-plugin', 'plugin.json')
 
 def _diff_paths(root: Path, base_ref: str, head_ref: str, diff_filter: str) -> set:
     result = subprocess.run(
-        ['git', 'diff', '-z', '--name-only', '--no-renames', f'--diff-filter={diff_filter}', f'{base_ref}...{head_ref}'],
+        [
+            'git',
+            'diff',
+            '-z',
+            '--name-only',
+            '--no-renames',
+            f'--diff-filter={diff_filter}',
+            '--end-of-options',
+            f'{base_ref}...{head_ref}',
+        ],
         cwd=root,
         capture_output=True,
         text=True,
+        timeout=GIT_TIMEOUT,
     )
     if result.returncode != 0:
         raise RuntimeError(result.stderr.strip() or 'git diff failed')
@@ -81,10 +92,11 @@ def has_new_agent(plugin: str, added: set) -> bool:
 
 def load_marketplace_at(root: Path, rev: str) -> dict | None:
     result = subprocess.run(
-        ['git', 'show', f'{rev}:{MARKETPLACE_PATH}'],
+        ['git', 'show', '--end-of-options', f'{rev}:{MARKETPLACE_PATH}'],
         cwd=root,
         capture_output=True,
         text=True,
+        timeout=GIT_TIMEOUT,
     )
     if result.returncode != 0:
         return None

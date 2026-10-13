@@ -8,6 +8,7 @@ from pathlib import Path
 from python_hooks.claude_plugin_marketplace._common import PLUGINS_DIR
 
 BUMP_ORDER = ['patch', 'minor', 'major']
+GIT_TIMEOUT = 60
 SEMVER = re.compile(r'(\d+)\.(\d+)\.(\d+)', re.ASCII)
 
 
@@ -23,10 +24,11 @@ def load_plugin_json(root: Path, name: str, rev: str | None = None) -> dict | No
         raw = path.read_text(encoding='utf-8')
     else:
         result = subprocess.run(
-            ['git', 'show', f'{rev}:{manifest_rel(name)}'],
+            ['git', 'show', '--end-of-options', f'{rev}:{manifest_rel(name)}'],
             cwd=root,
             capture_output=True,
             text=True,
+            timeout=GIT_TIMEOUT,
         )
         if result.returncode != 0:
             return None

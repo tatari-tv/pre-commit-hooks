@@ -339,6 +339,38 @@ def test_missing_base_marketplace_check_prints_a_note(repo, capsys):
     assert 'not found at main' in capsys.readouterr().err
 
 
+def test_dash_leading_ref_is_not_passed_to_git_as_an_option(repo, tmp_path_factory):
+    target = tmp_path_factory.mktemp('out') / 'leak.txt'
+    assert bumps.check_main(['--', f'--output={target}']) == 2
+    assert not target.exists()
+
+
+def test_git_timeout_is_a_clean_error(repo, monkeypatch, capsys):
+    real_run = subprocess.run
+
+    def hang(cmd, *args, **kwargs):
+        if cmd[1] == 'diff':
+            raise subprocess.TimeoutExpired(cmd, 60)
+        return real_run(cmd, *args, **kwargs)
+
+    monkeypatch.setattr(changes.subprocess, 'run', hang)
+    assert bumps.check_main(['main']) == 2
+    assert 'timed out' in capsys.readouterr().err
+
+
+def test_compute_does_not_write_through_a_symlinked_manifest(repo, tmp_path_factory, capsys):
+    outside = tmp_path_factory.mktemp('outside') / 'plugin.json'
+    outside.write_text(_manifest('alpha', '0.1.0'), encoding='utf-8')
+    manifest = repo / 'plugins/alpha/.claude-plugin/plugin.json'
+    manifest.unlink()
+    manifest.symlink_to(outside)
+    _touch(repo, 'alpha')
+    _commit(repo)
+    assert bumps.compute_main(['main']) == 2
+    assert json.loads(outside.read_text())['version'] == '0.1.0'
+    assert 'symlink' in capsys.readouterr().err
+
+
 def test_failure_hint_names_the_uvx_command(repo, capsys):
     _touch(repo, 'alpha')
     _commit(repo)
